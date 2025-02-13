@@ -8,7 +8,10 @@ import (
 type TokenType int
 
 const (
-	EOF TokenType = iota
+	EOF        TokenType = iota
+	WHITESPACE           // pseudotype that will not participate in AST but is needed to unify the tokenization code
+	COMMENT              // pseudotype that will not participate in AST but is kept as metadata
+	SYMBOL               // pseudotype that will be refined into a symbol specific TokenType or IDENTIFIER
 	NULL
 	TRUE
 	FALSE
@@ -84,6 +87,11 @@ const (
 )
 
 var patterns map[TokenType]*regexp.Regexp = map[TokenType]*regexp.Regexp{
+	WHITESPACE:         regexp.MustCompile(`^\s+`),
+	COMMENT:            regexp.MustCompile(`^\/\/.*`),
+	SYMBOL:             regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*`),
+	STRING:             regexp.MustCompile(`^"[^"]*"`),
+	NUMBER:             regexp.MustCompile(`^[0-9]+(\.[0-9]+)?`),
 	OPEN_BRACKET:       regexp.MustCompile(`^\[`),
 	CLOSE_BRACKET:      regexp.MustCompile(`^\]`),
 	OPEN_CURLY:         regexp.MustCompile(`^\{`),
@@ -143,6 +151,12 @@ func (tokenType TokenType) String() string {
 	switch tokenType {
 	case EOF:
 		return "eof"
+	case WHITESPACE:
+		return "whitespace"
+	case COMMENT:
+		return "comment"
+	case SYMBOL:
+		return "symbol"
 	case NULL:
 		return "null"
 	case NUMBER:
@@ -266,42 +280,8 @@ func (token Token) Debug() {
 	}
 }
 
-var (
-	reWhitespace    = regexp.MustCompile(`^\s+`)
-	reComment       = regexp.MustCompile(`^\/\/.*`)
-	reSymbol        = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*`)
-	reStringLiteral = regexp.MustCompile(`^"[^"]*"`)
-	reNumber        = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?`)
-)
-
-func tryMatchWhitespace(src string) int {
-	loc := reWhitespace.FindStringIndex(src)
-	if loc == nil {
-		return 0
-	}
-
-	if loc[0] > 0 {
-		panic(fmt.Sprintf("Internal error: regex matched at non-zero index %d!", loc[0]))
-	}
-
-	return loc[1]
-}
-
-func tryMatchComment(src string) int {
-	loc := reComment.FindStringIndex(src)
-	if loc == nil {
-		return 0
-	}
-
-	if loc[0] > 0 {
-		panic(fmt.Sprintf("Internal error: regex matched at non-zero index %d!", loc[0]))
-	}
-
-	return loc[1]
-}
-
-func tryMatchStringLiteral(src string) (int, Token) {
-	loc := reStringLiteral.FindStringIndex(src)
+func tryMatchPattern(src string, re *regexp.Regexp, tokenType TokenType) (int, Token) {
+	loc := re.FindStringIndex(src)
 	if loc == nil {
 		return 0, Token{}
 	}
@@ -313,47 +293,14 @@ func tryMatchStringLiteral(src string) (int, Token) {
 	match := src[:loc[1]]
 	length := loc[1]
 
-	return length, Token{
-		Type:  STRING,
-		Value: match,
-	}
-}
-
-func tryMatchNumber(src string) (int, Token) {
-	loc := reNumber.FindStringIndex(src)
-	if loc == nil {
-		return 0, Token{}
-	}
-
-	if loc[0] > 0 {
-		panic(fmt.Sprintf("Internal error: regex matched at non-zero index %d!", loc[0]))
-	}
-
-	match := src[:loc[1]]
-	length := loc[1]
-
-	return length, Token{
-		Type:  NUMBER,
-		Value: match,
-	}
-}
-
-func tryMatchSymbol(src string) (int, Token) {
-	loc := reSymbol.FindStringIndex(src)
-	if loc == nil {
-		return 0, Token{}
-	}
-
-	if loc[0] > 0 {
-		panic(fmt.Sprintf("Internal error: regex matched at non-zero index %d!", loc[0]))
-	}
-
-	match := src[:loc[1]]
-	length := loc[1]
-
-	if tokenType, found := reservedKeywords[match]; found {
+	if tokenType != SYMBOL {
 		return length, Token{
 			Type:  tokenType,
+			Value: match,
+		}
+	} else if keywordTokenType, found := reservedKeywords[match]; found {
+		return length, Token{
+			Type:  keywordTokenType,
 			Value: match,
 		}
 	}
@@ -364,63 +311,20 @@ func tryMatchSymbol(src string) (int, Token) {
 	}
 }
 
-func tryMatchGeneric(src string) (int, Token) {
-	for tokenType, pattern := range patterns {
-		if loc := pattern.FindStringIndex(src); loc != nil {
-			if loc[0] > 0 {
-				panic(fmt.Sprintf("Internal error: regex matched at non-zero index %d!", loc[0]))
-			}
-			match := src[:loc[1]]
-			length := loc[1]
-			return length, Token{
-				Type:  tokenType,
-				Value: match,
-			}
-		}
-
-	}
-	return 0, Token{}
-}
-
 func Tokenize(src string) []Token {
 	var pos int
 	tokens := make([]Token, 0)
 
 	for pos < len(src) {
 		remainingSrc := src[pos:]
-
-		if length := tryMatchWhitespace(remainingSrc); length != 0 {
-			pos += length
-			continue
-		}
-
-		if length := tryMatchComment(remainingSrc); length != 0 {
-			pos += length
-			continue
-		}
-
-		if length, newToken := tryMatchStringLiteral(remainingSrc); length != 0 {
-			tokens = append(tokens, newToken)
-			pos += length
-			continue
-		}
-
-		if length, newToken := tryMatchNumber(remainingSrc); length != 0 {
-			tokens = append(tokens, newToken)
-			pos += length
-			continue
-		}
-
-		if length, newToken := tryMatchSymbol(remainingSrc); length != 0 {
-			tokens = append(tokens, newToken)
-			pos += length
-			continue
-		}
-
-		if length, newToken := tryMatchGeneric(remainingSrc); length != 0 {
-			tokens = append(tokens, newToken)
-			pos += length
-			continue
+		for tokenType, pattern := range patterns {
+			if length, newToken := tryMatchPattern(remainingSrc, pattern, tokenType); length != 0 {
+				if newToken.Type != WHITESPACE {
+					tokens = append(tokens, newToken)
+				}
+				pos += length
+				continue
+			}
 		}
 	}
 
