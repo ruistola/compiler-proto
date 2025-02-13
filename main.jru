@@ -1,2 +1,10 @@
-// Comment
-3 + 2 * 4 + 1
+// This is a comment
+
+// This is another comment
+
+fn main() {
+    let foo = 3;
+    if foo == 7 {
+        panic("Oh noes!");
+    }
+}

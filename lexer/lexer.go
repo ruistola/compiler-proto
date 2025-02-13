@@ -86,44 +86,49 @@ const (
 	NUM_TOKENS
 )
 
-var patterns map[TokenType]*regexp.Regexp = map[TokenType]*regexp.Regexp{
-	WHITESPACE:         regexp.MustCompile(`^\s+`),
-	COMMENT:            regexp.MustCompile(`^\/\/.*`),
-	SYMBOL:             regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*`),
-	STRING:             regexp.MustCompile(`^"[^"]*"`),
-	NUMBER:             regexp.MustCompile(`^[0-9]+(\.[0-9]+)?`),
-	OPEN_BRACKET:       regexp.MustCompile(`^\[`),
-	CLOSE_BRACKET:      regexp.MustCompile(`^\]`),
-	OPEN_CURLY:         regexp.MustCompile(`^\{`),
-	CLOSE_CURLY:        regexp.MustCompile(`^\}`),
-	OPEN_PAREN:         regexp.MustCompile(`^\(`),
-	CLOSE_PAREN:        regexp.MustCompile(`^\)`),
-	ASSIGNMENT:         regexp.MustCompile(`^=`),
-	EQUALS:             regexp.MustCompile(`^==`),
-	NOT_EQUALS:         regexp.MustCompile(`^!=`),
-	NOT:                regexp.MustCompile(`^!`),
-	LESS:               regexp.MustCompile(`^<`),
-	LESS_EQUALS:        regexp.MustCompile(`^<=`),
-	GREATER:            regexp.MustCompile(`^>`),
-	GREATER_EQUALS:     regexp.MustCompile(`^>=`),
-	OR:                 regexp.MustCompile(`^\|\|`),
-	AND:                regexp.MustCompile(`^&&`),
-	DOT:                regexp.MustCompile(`^\.`),
-	DOT_DOT:            regexp.MustCompile(`^\.\.`),
-	SEMI_COLON:         regexp.MustCompile(`^;`),
-	COLON:              regexp.MustCompile(`^:`),
-	QUESTION:           regexp.MustCompile(`^\?`),
-	COMMA:              regexp.MustCompile(`^,`),
-	PLUS_PLUS:          regexp.MustCompile(`^\+\+`),
-	MINUS_MINUS:        regexp.MustCompile(`^--`),
-	PLUS_EQUALS:        regexp.MustCompile(`^\+=`),
-	MINUS_EQUALS:       regexp.MustCompile(`^-=`),
-	NULLISH_ASSIGNMENT: regexp.MustCompile(`^\?\?=`),
-	PLUS:               regexp.MustCompile(`^\+`),
-	DASH:               regexp.MustCompile(`^-`),
-	SLASH:              regexp.MustCompile(`^/`),
-	STAR:               regexp.MustCompile(`^\*`),
-	PERCENT:            regexp.MustCompile(`^%`),
+type tokenPattern struct {
+	tokenType TokenType
+	pattern   *regexp.Regexp
+}
+
+var tokenPatterns []tokenPattern = []tokenPattern{
+	{WHITESPACE, regexp.MustCompile(`^\s+`)},
+	{COMMENT, regexp.MustCompile(`^\/\/.*`)},
+	{SYMBOL, regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*`)},
+	{STRING, regexp.MustCompile(`^"[^"]*"`)},
+	{NUMBER, regexp.MustCompile(`^[0-9]+(\.[0-9]+)?`)},
+	{OPEN_BRACKET, regexp.MustCompile(`^\[`)},
+	{CLOSE_BRACKET, regexp.MustCompile(`^\]`)},
+	{OPEN_CURLY, regexp.MustCompile(`^\{`)},
+	{CLOSE_CURLY, regexp.MustCompile(`^\}`)},
+	{OPEN_PAREN, regexp.MustCompile(`^\(`)},
+	{CLOSE_PAREN, regexp.MustCompile(`^\)`)},
+	{EQUALS, regexp.MustCompile(`^==`)},
+	{ASSIGNMENT, regexp.MustCompile(`^=`)},
+	{NOT_EQUALS, regexp.MustCompile(`^!=`)},
+	{NOT, regexp.MustCompile(`^!`)},
+	{LESS, regexp.MustCompile(`^<`)},
+	{LESS_EQUALS, regexp.MustCompile(`^<=`)},
+	{GREATER, regexp.MustCompile(`^>`)},
+	{GREATER_EQUALS, regexp.MustCompile(`^>=`)},
+	{OR, regexp.MustCompile(`^\|\|`)},
+	{AND, regexp.MustCompile(`^&&`)},
+	{DOT, regexp.MustCompile(`^\.`)},
+	{DOT_DOT, regexp.MustCompile(`^\.\.`)},
+	{SEMI_COLON, regexp.MustCompile(`^;`)},
+	{COLON, regexp.MustCompile(`^:`)},
+	{QUESTION, regexp.MustCompile(`^\?`)},
+	{COMMA, regexp.MustCompile(`^,`)},
+	{PLUS_PLUS, regexp.MustCompile(`^\+\+`)},
+	{MINUS_MINUS, regexp.MustCompile(`^--`)},
+	{PLUS_EQUALS, regexp.MustCompile(`^\+=`)},
+	{MINUS_EQUALS, regexp.MustCompile(`^-=`)},
+	{NULLISH_ASSIGNMENT, regexp.MustCompile(`^\?\?=`)},
+	{PLUS, regexp.MustCompile(`^\+`)},
+	{DASH, regexp.MustCompile(`^-`)},
+	{SLASH, regexp.MustCompile(`^/`)},
+	{STAR, regexp.MustCompile(`^\*`)},
+	{PERCENT, regexp.MustCompile(`^%`)},
 }
 
 var reservedKeywords map[string]TokenType = map[string]TokenType{
@@ -303,27 +308,27 @@ func tryMatchPattern(src string, re *regexp.Regexp, tokenType TokenType) (int, T
 			Type:  keywordTokenType,
 			Value: match,
 		}
-	}
-
-	return length, Token{
-		Type:  IDENTIFIER,
-		Value: match,
+	} else {
+		return length, Token{
+			Type:  IDENTIFIER,
+			Value: match,
+		}
 	}
 }
 
 func Tokenize(src string) []Token {
-	var pos int
+	pos := 0
 	tokens := make([]Token, 0)
 
 	for pos < len(src) {
 		remainingSrc := src[pos:]
-		for tokenType, pattern := range patterns {
-			if length, newToken := tryMatchPattern(remainingSrc, pattern, tokenType); length != 0 {
+		for _, tp := range tokenPatterns {
+			if length, newToken := tryMatchPattern(remainingSrc, tp.pattern, tp.tokenType); length != 0 {
 				if newToken.Type != WHITESPACE {
 					tokens = append(tokens, newToken)
 				}
 				pos += length
-				continue
+				break
 			}
 		}
 	}
