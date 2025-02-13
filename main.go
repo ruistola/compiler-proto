@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"jru-test/lexer"
 	"os"
 )
 
@@ -11,5 +12,5 @@ func main() {
 		fmt.Printf("%v", err)
 		os.Exit(1)
 	}
-	_ = string(raw)
+	fmt.Printf("%s\n", lexer.Tokenize(string(raw)))
 }
