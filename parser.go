@@ -56,9 +56,11 @@ func parse(src string) *AstNode {
 func prefixPrec(tokenType TokenType) int {
 	switch tokenType {
 	case EOF:
-		return 0
+		return -1
 	case NUMBER, STRING, SYMBOL:
 		return 1
+	case PLUS, DASH:
+		return 5
 	default:
 		panic(fmt.Sprintf("Cannot determine prefix binding power for '%s'", tokenType))
 	}
@@ -67,7 +69,7 @@ func prefixPrec(tokenType TokenType) int {
 func infixPrec(tokenType TokenType) (int, int) {
 	switch tokenType {
 	case EOF:
-		return 0, 0
+		return -1, -1
 	case PLUS, DASH:
 		return 1, 2
 	case STAR, SLASH:
@@ -79,7 +81,7 @@ func infixPrec(tokenType TokenType) (int, int) {
 
 func parseExpr(lexer *Lexer, min_bp int) *AstNode {
 	token := lexer.advance()
-	left := parsePrefixExpr(token)
+	left := parsePrefixExpr(lexer, token)
 
 	for {
 		nextToken := lexer.peek()
@@ -98,13 +100,22 @@ func parseExpr(lexer *Lexer, min_bp int) *AstNode {
 	return left
 }
 
-func parsePrefixExpr(token Token) *AstNode {
+func parsePrefixExpr(lexer *Lexer, token Token) *AstNode {
 	switch token.Type {
 	case NUMBER, STRING, IDENTIFIER:
 		node := &AstNode{
 			token: token,
 			left:  nil,
 			right: nil,
+		}
+		return node
+	case PLUS, DASH:
+		bp := prefixPrec(token.Type)
+		right := parseExpr(lexer, bp)
+		node := &AstNode{
+			token: token,
+			left:  nil,
+			right: right,
 		}
 		return node
 	default:
