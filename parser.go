@@ -66,6 +66,8 @@ func prefixPrec(tokenType TokenType) int {
 
 func infixPrec(tokenType TokenType) (int, int) {
 	switch tokenType {
+	case EOF:
+		return -1, -1
 	case PLUS, DASH:
 		return 1, 2
 	case STAR, SLASH:
@@ -81,10 +83,6 @@ func parseExpr(lexer *Lexer, min_bp int) *AstNode {
 
 	for {
 		operator := lexer.peek()
-		if operator.Type == EOF {
-			break
-		}
-
 		if lbp, rbp := infixPrec(operator.Type); lbp < min_bp {
 			break
 		} else {
