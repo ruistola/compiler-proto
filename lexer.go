@@ -286,17 +286,17 @@ func (token Token) Debug() {
 }
 
 func tryMatchPattern(src string, re *regexp.Regexp, tokenType TokenType) (int, Token) {
-	loc := re.FindStringIndex(src)
-	if loc == nil {
+	matchRange := re.FindStringIndex(src)
+	if matchRange == nil {
 		return 0, Token{}
 	}
 
-	if loc[0] > 0 {
-		panic(fmt.Sprintf("Internal error: regex matched at non-zero index %d!", loc[0]))
+	if matchRange[0] > 0 {
+		panic(fmt.Sprintf("Internal error: regex matched at non-zero index %d!", matchRange[0]))
 	}
 
-	match := src[:loc[1]]
-	length := loc[1]
+	match := src[:matchRange[1]]
+	length := matchRange[1]
 
 	if tokenType != SYMBOL {
 		return length, Token{
