@@ -324,7 +324,7 @@ func tokenize(src string) []Token {
 		remainingSrc := src[pos:]
 		for _, tp := range tokenPatterns {
 			if length, newToken := tryMatchPattern(remainingSrc, tp.pattern, tp.tokenType); length != 0 {
-				if newToken.Type != WHITESPACE {
+				if newToken.Type != WHITESPACE && newToken.Type != COMMENT {
 					tokens = append(tokens, newToken)
 				}
 				pos += length
