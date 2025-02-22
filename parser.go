@@ -4,24 +4,24 @@ import (
 	"fmt"
 )
 
-type Lexer struct {
+type Parser struct {
 	tokens []Token
 	pos    int
 }
 
-func (l *Lexer) advance() Token {
-	if l.pos < len(l.tokens) {
-		token := l.tokens[l.pos]
-		l.pos++
+func (p *Parser) advance() Token {
+	if p.pos < len(p.tokens) {
+		token := p.tokens[p.pos]
+		p.pos++
 		return token
 	} else {
 		panic("Passed end of tokens without encountering EOF")
 	}
 }
 
-func (l *Lexer) peek() (token Token) {
-	if l.pos < len(l.tokens) {
-		return l.tokens[l.pos]
+func (p *Parser) peek() (token Token) {
+	if p.pos < len(p.tokens) {
+		return p.tokens[p.pos]
 	}
 	panic("Passed end of tokens without encountering EOF")
 }
@@ -46,11 +46,11 @@ func (node *AstNode) String() string {
 }
 
 func parse(src string) *AstNode {
-	lexer := Lexer{
+	parser := Parser{
 		tokens: tokenize(src),
 	}
-	fmt.Printf("Received tokens: %v\n", lexer.tokens)
-	return parseExpr(&lexer, 0)
+	fmt.Printf("Received tokens: %v\n", parser.tokens)
+	return parseExpr(&parser, 0)
 }
 
 func prefixPrec(tokenType TokenType) int {
@@ -79,17 +79,17 @@ func infixPrec(tokenType TokenType) (int, int) {
 	}
 }
 
-func parseExpr(lexer *Lexer, min_bp int) *AstNode {
-	token := lexer.advance()
-	left := parsePrefixExpr(lexer, token)
+func parseExpr(p *Parser, min_bp int) *AstNode {
+	token := p.advance()
+	left := parsePrefixExpr(p, token)
 
 	for {
-		nextToken := lexer.peek()
+		nextToken := p.peek()
 		if lbp, rbp := infixPrec(nextToken.Type); lbp < min_bp {
 			break
 		} else {
-			token = lexer.advance()
-			right := parseExpr(lexer, rbp)
+			token = p.advance()
+			right := parseExpr(p, rbp)
 			left = &AstNode{
 				token: token,
 				left:  left,
@@ -100,7 +100,7 @@ func parseExpr(lexer *Lexer, min_bp int) *AstNode {
 	return left
 }
 
-func parsePrefixExpr(lexer *Lexer, token Token) *AstNode {
+func parsePrefixExpr(p *Parser, token Token) *AstNode {
 	switch token.Type {
 	case NUMBER, STRING, IDENTIFIER:
 		node := &AstNode{
@@ -111,7 +111,7 @@ func parsePrefixExpr(lexer *Lexer, token Token) *AstNode {
 		return node
 	case PLUS, DASH:
 		bp := prefixPrec(token.Type)
-		right := parseExpr(lexer, bp)
+		right := parseExpr(p, bp)
 		node := &AstNode{
 			token: token,
 			left:  nil,
