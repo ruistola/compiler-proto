@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 )
 
 type Parser struct {
@@ -26,34 +27,73 @@ func (p *Parser) peek() (token Token) {
 	panic("Passed end of tokens without encountering EOF")
 }
 
-type AstNode struct {
-	token Token
-	left  *AstNode
-	right *AstNode
+type AstNode interface {
+	node()
 }
 
-func (node *AstNode) String() string {
-	switch {
-	case node.left == nil && node.right == nil:
-		return fmt.Sprintf("%s", node.token.Value)
-	case node.left == nil:
-		return fmt.Sprintf("(%s %s)", node.token.Value, node.right)
-	case node.right == nil:
-		return fmt.Sprintf("(%s %s)", node.token.Value, node.left)
-	default:
-		return fmt.Sprintf("(%s (%s %s))", node.token.Value, node.left, node.right)
-	}
+type StringNode struct {
+	value string
 }
 
-func parse(src string) *AstNode {
+func (n StringNode) node() {}
+
+func (n StringNode) String() string {
+	return n.value
+}
+
+type SymbolNode struct {
+	value string
+}
+
+func (n SymbolNode) node() {}
+
+func (n SymbolNode) String() string {
+	return n.value
+}
+
+type NumberNode struct {
+	value float64
+}
+
+func (n NumberNode) node() {}
+
+func (n NumberNode) String() string {
+	return fmt.Sprintf("%f", n.value)
+}
+
+type PrefixExprNode struct {
+	operator Token
+	rhs      AstNode
+}
+
+func (n PrefixExprNode) node() {}
+
+func (n PrefixExprNode) String() string {
+	return fmt.Sprintf("(%s %s)", n.operator.Value, n.rhs)
+}
+
+type InfixExprNode struct {
+	lhs      AstNode
+	operator Token
+	rhs      AstNode
+}
+
+func (n InfixExprNode) node() {}
+
+func (n InfixExprNode) String() string {
+	return fmt.Sprintf("(%s %s %s)", n.operator.Value, n.lhs, n.rhs)
+}
+
+func parse(src string) AstNode {
 	parser := Parser{
 		tokens: tokenize(src),
+		pos:    0,
 	}
 	fmt.Printf("Received tokens: %v\n", parser.tokens)
 	return parseExpr(&parser, 0)
 }
 
-func prefixPrec(tokenType TokenType) int {
+func headPrecedence(tokenType TokenType) int {
 	switch tokenType {
 	case EOF:
 		return 0
@@ -66,7 +106,7 @@ func prefixPrec(tokenType TokenType) int {
 	}
 }
 
-func infixPrec(tokenType TokenType) (int, int) {
+func tailPrecedence(tokenType TokenType) (int, int) {
 	switch tokenType {
 	case EOF:
 		return 0, 0
@@ -79,46 +119,62 @@ func infixPrec(tokenType TokenType) (int, int) {
 	}
 }
 
-func parseExpr(p *Parser, min_bp int) *AstNode {
+func parseExpr(p *Parser, min_bp int) AstNode {
 	token := p.advance()
-	left := parsePrefixExpr(p, token)
+	left := parseHeadExpr(p, token)
 
 	for {
 		nextToken := p.peek()
-		if lbp, rbp := infixPrec(nextToken.Type); lbp <= min_bp {
+		if lbp, rbp := tailPrecedence(nextToken.Type); lbp <= min_bp {
 			break
 		} else {
-			token = p.advance()
-			right := parseExpr(p, rbp)
-			left = &AstNode{
-				token: token,
-				left:  left,
-				right: right,
-			}
+			left = parseTailExpr(p, left, rbp)
 		}
 	}
 	return left
 }
 
-func parsePrefixExpr(p *Parser, token Token) *AstNode {
+func parseTailExpr(p *Parser, head AstNode, rbp int) AstNode {
+	token := p.advance()
 	switch token.Type {
-	case NUMBER, STRING, IDENTIFIER:
-		node := &AstNode{
-			token: token,
-			left:  nil,
-			right: nil,
+	case PLUS, DASH, STAR, SLASH:
+		tail := parseExpr(p, rbp)
+		return InfixExprNode{
+			lhs:      head,
+			operator: token,
+			rhs:      tail,
 		}
-		return node
-	case PLUS, DASH:
-		bp := prefixPrec(token.Type)
-		right := parseExpr(p, bp)
-		node := &AstNode{
-			token: token,
-			left:  nil,
-			right: right,
-		}
-		return node
 	default:
-		panic(fmt.Sprintf("Failed to parse primary expression from token %v\n", token))
+		panic(fmt.Sprintf("Failed to parse tail expression from token %v\n", token))
+	}
+}
+
+func parseHeadExpr(p *Parser, token Token) AstNode {
+	switch token.Type {
+	case NUMBER:
+		value, err := strconv.ParseFloat(token.Value, 64)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to parse number token: %v\n", token))
+		}
+		return NumberNode{
+			value,
+		}
+	case STRING:
+		return StringNode{
+			value: token.Value,
+		}
+	case IDENTIFIER:
+		return SymbolNode{
+			value: token.Value,
+		}
+	case PLUS, DASH:
+		rbp := headPrecedence(token.Type)
+		rhs := parseExpr(p, rbp)
+		return PrefixExprNode{
+			operator: token,
+			rhs:      rhs,
+		}
+	default:
+		panic(fmt.Sprintf("Failed to parse head expression from token %v\n", token))
 	}
 }
