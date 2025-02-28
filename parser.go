@@ -56,7 +56,7 @@ func parse(src string) *AstNode {
 func prefixPrec(tokenType TokenType) int {
 	switch tokenType {
 	case EOF:
-		return -1
+		return 0
 	case NUMBER, STRING, SYMBOL:
 		return 1
 	case PLUS, DASH:
@@ -69,7 +69,7 @@ func prefixPrec(tokenType TokenType) int {
 func infixPrec(tokenType TokenType) (int, int) {
 	switch tokenType {
 	case EOF:
-		return -1, -1
+		return 0, 0
 	case PLUS, DASH:
 		return 1, 2
 	case STAR, SLASH:
@@ -85,7 +85,7 @@ func parseExpr(p *Parser, min_bp int) *AstNode {
 
 	for {
 		nextToken := p.peek()
-		if lbp, rbp := infixPrec(nextToken.Type); lbp < min_bp {
+		if lbp, rbp := infixPrec(nextToken.Type); lbp <= min_bp {
 			break
 		} else {
 			token = p.advance()
