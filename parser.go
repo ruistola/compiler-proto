@@ -10,6 +10,10 @@ type Parser struct {
 	pos    int
 }
 
+func (p *Parser) currentToken() Token {
+	return p.tokens[p.pos]
+}
+
 func (p *Parser) advance() Token {
 	if p.pos < len(p.tokens) {
 		token := p.tokens[p.pos]
@@ -20,7 +24,7 @@ func (p *Parser) advance() Token {
 	}
 }
 
-func (p *Parser) peek() (token Token) {
+func (p *Parser) peek() Token {
 	if p.pos < len(p.tokens) {
 		return p.tokens[p.pos]
 	}
