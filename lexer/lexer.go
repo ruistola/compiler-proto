@@ -1,4 +1,4 @@
-package main
+package lexer
 
 import (
 	"fmt"
@@ -316,7 +316,7 @@ func tryMatchPattern(src string, re *regexp.Regexp, tokenType TokenType) (int, T
 	}
 }
 
-func tokenize(src string) []Token {
+func Tokenize(src string) []Token {
 	pos := 0
 	tokens := make([]Token, 0)
 
