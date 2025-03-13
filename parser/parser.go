@@ -7,16 +7,25 @@ import (
 	"strconv"
 )
 
-type Parser struct {
+func Parse(src string) ast.Node {
+	p := parser{
+		tokens: lexer.Tokenize(src),
+		pos:    0,
+	}
+	fmt.Printf("Received tokens: %v\n", p.tokens)
+	return p.parseExpr(0)
+}
+
+type parser struct {
 	tokens []lexer.Token
 	pos    int
 }
 
-func (p *Parser) currentToken() lexer.Token {
+func (p *parser) currentToken() lexer.Token {
 	return p.tokens[p.pos]
 }
 
-func (p *Parser) advance() lexer.Token {
+func (p *parser) advance() lexer.Token {
 	if p.pos < len(p.tokens) {
 		token := p.tokens[p.pos]
 		p.pos++
@@ -26,19 +35,11 @@ func (p *Parser) advance() lexer.Token {
 	}
 }
 
-func (p *Parser) peek() lexer.Token {
+func (p *parser) peek() lexer.Token {
 	if p.pos < len(p.tokens) {
 		return p.tokens[p.pos]
 	}
 	panic("Passed end of tokens without encountering EOF")
-}
-func Parse(src string) ast.Node {
-	parser := Parser{
-		tokens: lexer.Tokenize(src),
-		pos:    0,
-	}
-	fmt.Printf("Received tokens: %v\n", parser.tokens)
-	return parseExpr(&parser, 0)
 }
 
 func headPrecedence(tokenType lexer.TokenType) int {
@@ -67,26 +68,26 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 	}
 }
 
-func parseExpr(p *Parser, min_bp int) ast.Node {
+func (p *parser) parseExpr(min_bp int) ast.Node {
 	token := p.advance()
-	left := parseHeadExpr(p, token)
+	left := p.parseHeadExpr(token)
 
 	for {
 		nextToken := p.peek()
 		if lbp, rbp := tailPrecedence(nextToken.Type); lbp <= min_bp {
 			break
 		} else {
-			left = parseTailExpr(p, left, rbp)
+			left = p.parseTailExpr(left, rbp)
 		}
 	}
 	return left
 }
 
-func parseTailExpr(p *Parser, head ast.Node, rbp int) ast.Node {
+func (p *parser) parseTailExpr(head ast.Node, rbp int) ast.Node {
 	token := p.advance()
 	switch token.Type {
 	case lexer.PLUS, lexer.DASH, lexer.STAR, lexer.SLASH:
-		tail := parseExpr(p, rbp)
+		tail := p.parseExpr(rbp)
 		return ast.BinaryExprNode{
 			Lhs:      head,
 			Operator: token,
@@ -97,7 +98,7 @@ func parseTailExpr(p *Parser, head ast.Node, rbp int) ast.Node {
 	}
 }
 
-func parseHeadExpr(p *Parser, token lexer.Token) ast.Node {
+func (p *parser) parseHeadExpr(token lexer.Token) ast.Node {
 	switch token.Type {
 	case lexer.NUMBER:
 		value, err := strconv.ParseFloat(token.Value, 64)
@@ -117,7 +118,7 @@ func parseHeadExpr(p *Parser, token lexer.Token) ast.Node {
 		}
 	case lexer.PLUS, lexer.DASH:
 		rbp := headPrecedence(token.Type)
-		rhs := parseExpr(p, rbp)
+		rhs := p.parseExpr(rbp)
 		return ast.UnaryExprNode{
 			Operator: token,
 			Rhs:      rhs,
