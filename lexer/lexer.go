@@ -27,7 +27,7 @@ const (
 	OPEN_PAREN
 	CLOSE_PAREN
 
-	// Equivilance
+	// Equivalence
 	ASSIGNMENT
 	EQUALS
 	NOT_EQUALS
