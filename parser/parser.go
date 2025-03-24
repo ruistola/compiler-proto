@@ -21,10 +21,6 @@ type parser struct {
 	pos    int
 }
 
-func (p *parser) currentToken() lexer.Token {
-	return p.tokens[p.pos]
-}
-
 func (p *parser) advance() lexer.Token {
 	if p.pos < len(p.tokens) {
 		token := p.tokens[p.pos]

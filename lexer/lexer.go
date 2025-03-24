@@ -12,9 +12,6 @@ const (
 	WHITESPACE           // pseudotype that will not participate in AST but is needed to unify the tokenization code
 	COMMENT              // pseudotype that will not participate in AST but is kept as metadata
 	SYMBOL               // pseudotype that will be refined into a symbol specific TokenType or IDENTIFIER
-	NULL
-	TRUE
-	FALSE
 	NUMBER
 	STRING
 	IDENTIFIER
@@ -46,17 +43,15 @@ const (
 	// Symbols
 	DOT
 	DOT_DOT
+	DOT_DOT_DOT
 	SEMI_COLON
 	COLON
 	QUESTION
 	COMMA
 
 	// Shorthand
-	PLUS_PLUS
-	MINUS_MINUS
 	PLUS_EQUALS
 	MINUS_EQUALS
-	NULLISH_ASSIGNMENT // ??=
 
 	//Maths
 	PLUS
@@ -66,20 +61,28 @@ const (
 	PERCENT
 
 	// Reserved Keywords
+
 	LET
+	VAR
 	CONST
-	CLASS
-	NEW
+	PACKAGE
 	IMPORT
-	FROM
-	FN
+	EXPORT
+	STRUCT
+	ONEOF
+	TRUE
+	FALSE
+	FUNC
+	INTERFACE
+	TYPE
+	TYPEOF
+	MATCH
 	IF
+	THEN
 	ELSE
-	FOREACH
+	DO
 	WHILE
 	FOR
-	EXPORT
-	TYPEOF
 	IN
 
 	// Misc
@@ -115,15 +118,13 @@ var tokenPatterns []tokenPattern = []tokenPattern{
 	{AND, regexp.MustCompile(`^&&`)},
 	{DOT, regexp.MustCompile(`^\.`)},
 	{DOT_DOT, regexp.MustCompile(`^\.\.`)},
+	{DOT_DOT_DOT, regexp.MustCompile(`^\.\.\.`)},
 	{SEMI_COLON, regexp.MustCompile(`^;`)},
 	{COLON, regexp.MustCompile(`^:`)},
 	{QUESTION, regexp.MustCompile(`^\?`)},
 	{COMMA, regexp.MustCompile(`^,`)},
-	{PLUS_PLUS, regexp.MustCompile(`^\+\+`)},
-	{MINUS_MINUS, regexp.MustCompile(`^--`)},
 	{PLUS_EQUALS, regexp.MustCompile(`^\+=`)},
 	{MINUS_EQUALS, regexp.MustCompile(`^-=`)},
-	{NULLISH_ASSIGNMENT, regexp.MustCompile(`^\?\?=`)},
 	{PLUS, regexp.MustCompile(`^\+`)},
 	{DASH, regexp.MustCompile(`^-`)},
 	{SLASH, regexp.MustCompile(`^/`)},
@@ -132,24 +133,28 @@ var tokenPatterns []tokenPattern = []tokenPattern{
 }
 
 var reservedKeywords map[string]TokenType = map[string]TokenType{
-	"true":    TRUE,
-	"false":   FALSE,
-	"null":    NULL,
-	"let":     LET,
-	"const":   CONST,
-	"class":   CLASS,
-	"new":     NEW,
-	"import":  IMPORT,
-	"from":    FROM,
-	"fn":      FN,
-	"if":      IF,
-	"else":    ELSE,
-	"foreach": FOREACH,
-	"while":   WHILE,
-	"for":     FOR,
-	"export":  EXPORT,
-	"typeof":  TYPEOF,
-	"in":      IN,
+	"let":       LET,
+	"var":       VAR,
+	"const":     CONST,
+	"package":   PACKAGE,
+	"import":    IMPORT,
+	"export":    EXPORT,
+	"struct":    STRUCT,
+	"oneof":     ONEOF,
+	"true":      TRUE,
+	"false":     FALSE,
+	"func":      FUNC,
+	"interface": INTERFACE,
+	"type":      TYPE,
+	"typeof":    TYPEOF,
+	"match":     MATCH,
+	"if":        IF,
+	"then":      THEN,
+	"else":      ELSE,
+	"do":        DO,
+	"while":     WHILE,
+	"for":       FOR,
+	"in":        IN,
 }
 
 func (tokenType TokenType) String() string {
@@ -162,8 +167,6 @@ func (tokenType TokenType) String() string {
 		return "comment"
 	case SYMBOL:
 		return "symbol"
-	case NULL:
-		return "null"
 	case NUMBER:
 		return "number"
 	case STRING:
@@ -218,16 +221,10 @@ func (tokenType TokenType) String() string {
 		return "question"
 	case COMMA:
 		return "comma"
-	case PLUS_PLUS:
-		return "plus_plus"
-	case MINUS_MINUS:
-		return "minus_minus"
 	case PLUS_EQUALS:
 		return "plus_equals"
 	case MINUS_EQUALS:
 		return "minus_equals"
-	case NULLISH_ASSIGNMENT:
-		return "nullish_assignment"
 	case PLUS:
 		return "plus"
 	case DASH:
@@ -242,22 +239,14 @@ func (tokenType TokenType) String() string {
 		return "let"
 	case CONST:
 		return "const"
-	case CLASS:
-		return "class"
-	case NEW:
-		return "new"
 	case IMPORT:
 		return "import"
-	case FROM:
-		return "from"
-	case FN:
-		return "fn"
+	case FUNC:
+		return "func"
 	case IF:
 		return "if"
 	case ELSE:
 		return "else"
-	case FOREACH:
-		return "foreach"
 	case FOR:
 		return "for"
 	case WHILE:
@@ -266,6 +255,24 @@ func (tokenType TokenType) String() string {
 		return "export"
 	case IN:
 		return "in"
+	case PACKAGE:
+		return "package"
+	case STRUCT:
+		return "struct"
+	case ONEOF:
+		return "oneof"
+	case INTERFACE:
+		return "interface"
+	case TYPE:
+		return "type"
+	case TYPEOF:
+		return "typeof"
+	case MATCH:
+		return "match"
+	case THEN:
+		return "then"
+	case DO:
+		return "do"
 	default:
 		return fmt.Sprintf("unknown(%d)", tokenType)
 	}
