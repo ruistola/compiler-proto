@@ -7,18 +7,21 @@ import (
 	"strconv"
 )
 
-func Parse(src string) ast.Node {
-	p := parser{
-		tokens: lexer.Tokenize(src),
-		pos:    0,
-	}
-	fmt.Printf("Received tokens: %v\n", p.tokens)
+func Parse(tokens []lexer.Token) ast.Node {
+	p := parser{tokens, 0}
 	return p.parseExpr(0)
 }
 
 type parser struct {
 	tokens []lexer.Token
 	pos    int
+}
+
+func (p *parser) expect(expected lexer.TokenType) lexer.Token {
+	if nextToken := p.peek(); nextToken.Type != expected {
+		panic(fmt.Sprintf("Expected %s, found %s\n", expected, nextToken.Type))
+	}
+	return p.advance()
 }
 
 func (p *parser) advance() lexer.Token {
@@ -47,7 +50,7 @@ func headPrecedence(tokenType lexer.TokenType) int {
 	case lexer.PLUS, lexer.DASH:
 		return 5
 	default:
-		panic(fmt.Sprintf("Cannot determine prefix binding power for '%s'", tokenType))
+		panic(fmt.Sprintf("Cannot determine binding power for '%s' as a head token", tokenType))
 	}
 }
 
@@ -60,7 +63,7 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 	case lexer.STAR, lexer.SLASH:
 		return 3, 4
 	default:
-		panic(fmt.Sprintf("Cannot determine infix binding power for '%s'", tokenType))
+		panic(fmt.Sprintf("Cannot determine binding power for '%s' as a tail token", tokenType))
 	}
 }
 

@@ -10,8 +10,8 @@ type TokenType int
 const (
 	EOF        TokenType = iota
 	WHITESPACE           // pseudotype that will not participate in AST but is needed to unify the tokenization code
-	COMMENT              // pseudotype that will not participate in AST but is kept as metadata
 	SYMBOL               // pseudotype that will be refined into a symbol specific TokenType or IDENTIFIER
+	COMMENT              // pseudotype that will not participate in AST but may in the future be kept as metadata
 	NUMBER
 	STRING
 	IDENTIFIER
@@ -42,11 +42,8 @@ const (
 
 	// Symbols
 	DOT
-	DOT_DOT
-	DOT_DOT_DOT
 	SEMI_COLON
 	COLON
-	QUESTION
 	COMMA
 
 	// Shorthand
@@ -61,29 +58,13 @@ const (
 	PERCENT
 
 	// Reserved Keywords
-
 	LET
-	VAR
-	CONST
-	PACKAGE
-	IMPORT
-	EXPORT
 	STRUCT
-	ONEOF
 	TRUE
 	FALSE
 	FUNC
-	INTERFACE
-	TYPE
-	TYPEOF
-	MATCH
 	IF
-	THEN
-	ELSE
-	DO
-	WHILE
 	FOR
-	IN
 
 	// Misc
 	NUM_TOKENS
@@ -96,10 +77,10 @@ type tokenPattern struct {
 
 var tokenPatterns []tokenPattern = []tokenPattern{
 	{WHITESPACE, regexp.MustCompile(`^\s+`)},
-	{COMMENT, regexp.MustCompile(`^\/\/.*`)},
 	{SYMBOL, regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*`)},
-	{STRING, regexp.MustCompile(`^"[^"]*"`)},
+	{COMMENT, regexp.MustCompile(`^\/\/.*`)},
 	{NUMBER, regexp.MustCompile(`^[0-9]+(\.[0-9]+)?`)},
+	{STRING, regexp.MustCompile(`^"[^"]*"`)},
 	{OPEN_BRACKET, regexp.MustCompile(`^\[`)},
 	{CLOSE_BRACKET, regexp.MustCompile(`^\]`)},
 	{OPEN_CURLY, regexp.MustCompile(`^\{`)},
@@ -117,11 +98,8 @@ var tokenPatterns []tokenPattern = []tokenPattern{
 	{OR, regexp.MustCompile(`^\|\|`)},
 	{AND, regexp.MustCompile(`^&&`)},
 	{DOT, regexp.MustCompile(`^\.`)},
-	{DOT_DOT, regexp.MustCompile(`^\.\.`)},
-	{DOT_DOT_DOT, regexp.MustCompile(`^\.\.\.`)},
 	{SEMI_COLON, regexp.MustCompile(`^;`)},
 	{COLON, regexp.MustCompile(`^:`)},
-	{QUESTION, regexp.MustCompile(`^\?`)},
 	{COMMA, regexp.MustCompile(`^,`)},
 	{PLUS_EQUALS, regexp.MustCompile(`^\+=`)},
 	{MINUS_EQUALS, regexp.MustCompile(`^-=`)},
@@ -133,28 +111,13 @@ var tokenPatterns []tokenPattern = []tokenPattern{
 }
 
 var reservedKeywords map[string]TokenType = map[string]TokenType{
-	"let":       LET,
-	"var":       VAR,
-	"const":     CONST,
-	"package":   PACKAGE,
-	"import":    IMPORT,
-	"export":    EXPORT,
-	"struct":    STRUCT,
-	"oneof":     ONEOF,
-	"true":      TRUE,
-	"false":     FALSE,
-	"func":      FUNC,
-	"interface": INTERFACE,
-	"type":      TYPE,
-	"typeof":    TYPEOF,
-	"match":     MATCH,
-	"if":        IF,
-	"then":      THEN,
-	"else":      ELSE,
-	"do":        DO,
-	"while":     WHILE,
-	"for":       FOR,
-	"in":        IN,
+	"let":    LET,
+	"struct": STRUCT,
+	"true":   TRUE,
+	"false":  FALSE,
+	"func":   FUNC,
+	"if":     IF,
+	"for":    FOR,
 }
 
 func (tokenType TokenType) String() string {
@@ -163,10 +126,10 @@ func (tokenType TokenType) String() string {
 		return "eof"
 	case WHITESPACE:
 		return "whitespace"
-	case COMMENT:
-		return "comment"
 	case SYMBOL:
 		return "symbol"
+	case COMMENT:
+		return "comment"
 	case NUMBER:
 		return "number"
 	case STRING:
@@ -211,14 +174,10 @@ func (tokenType TokenType) String() string {
 		return "and"
 	case DOT:
 		return "dot"
-	case DOT_DOT:
-		return "dot_dot"
 	case SEMI_COLON:
 		return "semi_colon"
 	case COLON:
 		return "colon"
-	case QUESTION:
-		return "question"
 	case COMMA:
 		return "comma"
 	case PLUS_EQUALS:
@@ -237,42 +196,14 @@ func (tokenType TokenType) String() string {
 		return "percent"
 	case LET:
 		return "let"
-	case CONST:
-		return "const"
-	case IMPORT:
-		return "import"
 	case FUNC:
 		return "func"
 	case IF:
 		return "if"
-	case ELSE:
-		return "else"
 	case FOR:
 		return "for"
-	case WHILE:
-		return "while"
-	case EXPORT:
-		return "export"
-	case IN:
-		return "in"
-	case PACKAGE:
-		return "package"
 	case STRUCT:
 		return "struct"
-	case ONEOF:
-		return "oneof"
-	case INTERFACE:
-		return "interface"
-	case TYPE:
-		return "type"
-	case TYPEOF:
-		return "typeof"
-	case MATCH:
-		return "match"
-	case THEN:
-		return "then"
-	case DO:
-		return "do"
 	default:
 		return fmt.Sprintf("unknown(%d)", tokenType)
 	}

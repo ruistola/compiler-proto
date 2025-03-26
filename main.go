@@ -2,13 +2,26 @@ package main
 
 import (
 	"fmt"
+	"jru-test/lexer"
 	"jru-test/parser"
+	"os"
+	"time"
 )
 
 func main() {
-	src := "2 + 3 * 4 - -1"
-	fmt.Printf("Raw source: %s\n", src)
-	ast := parser.Parse(src)
-	fmt.Println("Parsed AST:")
-	fmt.Printf("%s", ast)
+	filename := "source1.jru"
+	sourceBytes, _ := os.ReadFile(filename)
+	src := string(sourceBytes)
+
+	start := time.Now()
+	tokens := lexer.Tokenize(src)
+	ast := parser.Parse(tokens)
+	duration := time.Since(start)
+	fmt.Printf("Parsed %s in %v\n\n", filename, duration)
+
+	fmt.Printf("Raw source:\n%s\n", src)
+
+	fmt.Printf("Tokens:\n%s\n\n", tokens)
+
+	fmt.Printf("Parsed AST:\n%s\n", ast)
 }
