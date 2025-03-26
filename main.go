@@ -9,19 +9,23 @@ import (
 )
 
 func main() {
-	filename := "source1.jru"
+	filename := "source2.jru"
 	sourceBytes, _ := os.ReadFile(filename)
 	src := string(sourceBytes)
 
-	start := time.Now()
+	fmt.Printf("Raw source (%s):\n--\n%s--\n", filename, src)
+
+	startTokenization := time.Now()
 	tokens := lexer.Tokenize(src)
-	ast := parser.Parse(tokens)
-	duration := time.Since(start)
-	fmt.Printf("Parsed %s in %v\n\n", filename, duration)
-
-	fmt.Printf("Raw source:\n%s\n", src)
-
+	durationTokenization := time.Since(startTokenization)
+	fmt.Printf("Tokenized %s in %v.\n\n", filename, durationTokenization)
 	fmt.Printf("Tokens:\n%s\n\n", tokens)
 
-	fmt.Printf("Parsed AST:\n%s\n", ast)
+	startParsing := time.Now()
+	ast := parser.Parse(tokens)
+	durationParsing := time.Since(startParsing)
+	fmt.Printf("Parsed %s in %v.\n\n", filename, durationParsing)
+
+	fmt.Printf("Parsed AST:\n%s\n\n", ast)
+	fmt.Printf("Done in %v.\n", durationTokenization+durationParsing)
 }
