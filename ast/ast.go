@@ -64,7 +64,7 @@ func (n BinaryExprNode) String() string {
 }
 
 type BlockExprNode struct {
-	body []Node
+	Body []Node
 }
 
 func (n BlockExprNode) node() {}
@@ -72,9 +72,8 @@ func (n BlockExprNode) node() {}
 func (n BlockExprNode) String() string {
 	var sb strings.Builder
 	sb.WriteString("(")
-	for _, expr := range n.body {
-		sb.WriteString(fmt.Sprintf("%s", expr))
-		sb.WriteString(" ")
+	for _, expr := range n.Body {
+		sb.WriteString(fmt.Sprintf("%s ", expr))
 	}
 	sb.WriteString(")")
 	return fmt.Sprintf(sb.String())

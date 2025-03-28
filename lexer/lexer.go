@@ -271,9 +271,5 @@ func Tokenize(src string) []Token {
 		}
 	}
 
-	tokens = append(tokens, Token{
-		Type:  EOF,
-		Value: "EOF",
-	})
 	return tokens
 }

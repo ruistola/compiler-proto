@@ -7,38 +7,31 @@ import (
 	"strconv"
 )
 
-func Parse(tokens []lexer.Token) ast.Node {
-	p := parser{tokens, 0}
-	return p.parseExpr(0)
-}
-
 type parser struct {
 	tokens []lexer.Token
 	pos    int
 }
 
-func (p *parser) expect(expected lexer.TokenType) lexer.Token {
-	if nextToken := p.peek(); nextToken.Type != expected {
-		panic(fmt.Sprintf("Expected %s, found %s\n", expected, nextToken.Type))
+func (p *parser) peek() lexer.Token {
+	result := lexer.Token{}
+	if p.pos < len(p.tokens) {
+		result = p.tokens[p.pos]
 	}
-	return p.advance()
+	return result
 }
 
 func (p *parser) advance() lexer.Token {
-	if p.pos < len(p.tokens) {
-		token := p.tokens[p.pos]
-		p.pos++
-		return token
-	} else {
-		panic("Passed end of tokens without encountering EOF")
-	}
+	nextToken := p.peek()
+	p.pos++
+	return nextToken
 }
 
-func (p *parser) peek() lexer.Token {
-	if p.pos < len(p.tokens) {
-		return p.tokens[p.pos]
+func (p *parser) expect(expected lexer.TokenType) lexer.Token {
+	nextToken := p.advance()
+	if nextToken.Type != expected {
+		panic(fmt.Sprintf("Expected %s, found %s\n", expected, nextToken.Type))
 	}
-	panic("Passed end of tokens without encountering EOF")
+	return nextToken
 }
 
 func headPrecedence(tokenType lexer.TokenType) int {
@@ -65,6 +58,19 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 	default:
 		panic(fmt.Sprintf("Cannot determine binding power for '%s' as a tail token", tokenType))
 	}
+}
+
+func Parse(tokens []lexer.Token) ast.Node {
+	p := parser{tokens, 0}
+	return p.parseProgram()
+}
+
+func (p *parser) parseProgram() ast.Node {
+	program := ast.BlockExprNode{}
+	for p.peek().Type != lexer.EOF {
+		program.Body = append(program.Body, p.parseExpr(0))
+	}
+	return program
 }
 
 func (p *parser) parseExpr(min_bp int) ast.Node {
@@ -122,6 +128,13 @@ func (p *parser) parseHeadExpr(token lexer.Token) ast.Node {
 			Operator: token,
 			Rhs:      rhs,
 		}
+	// case lexer.FUNC:
+	//     rbp := headPrecedence(token.Type)
+	//           name := p.expect(lexer.IDENTIFIER)
+	//     _ = p.expect(lexer.OPEN_PAREN)
+	// TODO: parse parameter list
+	//     _ = p.expect(lexer.CLOSE_PAREN)
+	// return ast.FuncDeclNode{}
 	default:
 		panic(fmt.Sprintf("Failed to parse head expression from token %v\n", token))
 	}
