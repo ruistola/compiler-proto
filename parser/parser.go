@@ -60,20 +60,76 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 	}
 }
 
-func Parse(tokens []lexer.Token) ast.Node {
+func Parse(tokens []lexer.Token) ast.BlockStmt {
 	p := parser{tokens, 0}
 	return p.parseProgram()
 }
 
-func (p *parser) parseProgram() ast.Node {
-	program := ast.BlockExprNode{}
+func (p *parser) parseProgram() ast.BlockStmt {
+	program := ast.BlockStmt{}
 	for p.peek().Type != lexer.EOF {
-		program.Body = append(program.Body, p.parseExpr(0))
+		program.Body = append(program.Body, p.parseExpressionStmt())
 	}
 	return program
 }
 
-func (p *parser) parseExpr(min_bp int) ast.Node {
+func (p *parser) parseStmt() ast.Stmt {
+	switch p.peek().Type {
+	case lexer.FUNC:
+		return p.parseFuncDeclStmt()
+	default:
+		return p.parseExpressionStmt()
+	}
+}
+
+func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
+	p.expect(lexer.FUNC)
+	name := p.expect(lexer.IDENTIFIER).Value
+
+	// Parse function parameter list
+	p.expect(lexer.OPEN_PAREN)
+	params := make([]ast.FuncParm, 0)
+	p.expect(lexer.CLOSE_PAREN)
+
+	// is followed by a return type, if any
+	var returnType ast.Type
+	if p.peek().Type == lexer.COLON {
+		p.advance()
+		// TODO: parse type
+	}
+
+	// Parse function body
+	funcBody := p.parseBlockStmt()
+
+	return ast.FuncDeclStmt{
+		Name:       name,
+		Parameters: params,
+		ReturnType: returnType,
+		Body:       funcBody.Body,
+	}
+}
+
+func (p *parser) parseExpressionStmt() ast.Stmt {
+	expr := p.parseExpr(0)
+	p.expect(lexer.SEMI_COLON)
+	return ast.ExpressionStmt{
+		Expr: expr,
+	}
+}
+
+func (p *parser) parseBlockStmt() ast.BlockStmt {
+	p.expect(lexer.OPEN_CURLY)
+	body := []ast.Stmt{}
+	for nextToken := p.peek(); nextToken.Type != lexer.EOF && nextToken.Type != lexer.CLOSE_CURLY; nextToken = p.peek() {
+		body = append(body, p.parseStmt())
+	}
+	p.expect(lexer.CLOSE_CURLY)
+	return ast.BlockStmt{
+		Body: body,
+	}
+}
+
+func (p *parser) parseExpr(min_bp int) ast.Expr {
 	token := p.advance()
 	left := p.parseHeadExpr(token)
 
@@ -88,12 +144,12 @@ func (p *parser) parseExpr(min_bp int) ast.Node {
 	return left
 }
 
-func (p *parser) parseTailExpr(head ast.Node, rbp int) ast.Node {
+func (p *parser) parseTailExpr(head ast.Expr, rbp int) ast.Expr {
 	token := p.advance()
 	switch token.Type {
 	case lexer.PLUS, lexer.DASH, lexer.STAR, lexer.SLASH:
 		tail := p.parseExpr(rbp)
-		return ast.BinaryExprNode{
+		return ast.BinaryExpr{
 			Lhs:      head,
 			Operator: token,
 			Rhs:      tail,
@@ -103,38 +159,31 @@ func (p *parser) parseTailExpr(head ast.Node, rbp int) ast.Node {
 	}
 }
 
-func (p *parser) parseHeadExpr(token lexer.Token) ast.Node {
+func (p *parser) parseHeadExpr(token lexer.Token) ast.Expr {
 	switch token.Type {
 	case lexer.NUMBER:
 		value, err := strconv.ParseFloat(token.Value, 64)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to parse number token: %v\n", token))
 		}
-		return ast.NumberNode{
+		return ast.NumberExpr{
 			Value: value,
 		}
 	case lexer.STRING:
-		return ast.StringNode{
+		return ast.StringExpr{
 			Value: token.Value,
 		}
 	case lexer.IDENTIFIER:
-		return ast.SymbolNode{
+		return ast.SymbolExpr{
 			Value: token.Value,
 		}
 	case lexer.PLUS, lexer.DASH:
 		rbp := headPrecedence(token.Type)
 		rhs := p.parseExpr(rbp)
-		return ast.UnaryExprNode{
+		return ast.UnaryExpr{
 			Operator: token,
 			Rhs:      rhs,
 		}
-	// case lexer.FUNC:
-	//     rbp := headPrecedence(token.Type)
-	//           name := p.expect(lexer.IDENTIFIER)
-	//     _ = p.expect(lexer.OPEN_PAREN)
-	// TODO: parse parameter list
-	//     _ = p.expect(lexer.CLOSE_PAREN)
-	// return ast.FuncDeclNode{}
 	default:
 		panic(fmt.Sprintf("Failed to parse head expression from token %v\n", token))
 	}

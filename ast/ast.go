@@ -6,70 +6,98 @@ import (
 	"strings"
 )
 
-type Node interface {
-	node()
+type Type interface {
+	_type()
 }
 
-type StringNode struct {
+type Expr interface {
+	expr()
+}
+
+type Stmt interface {
+	stmt()
+}
+
+type SymbolType struct {
 	Value string
 }
 
-func (n StringNode) node() {}
+func (n SymbolType) _type() {}
 
-func (n StringNode) String() string {
+func (n SymbolType) String() string {
 	return n.Value
 }
 
-type SymbolNode struct {
+type ArrayType struct {
+	UnderlyingType Type
+}
+
+func (n ArrayType) _type() {}
+
+func (n ArrayType) String() string {
+	return fmt.Sprintf("%s[]", n.UnderlyingType)
+}
+
+type StringExpr struct {
 	Value string
 }
 
-func (n SymbolNode) node() {}
+func (n StringExpr) expr() {}
 
-func (n SymbolNode) String() string {
+func (n StringExpr) String() string {
 	return n.Value
 }
 
-type NumberNode struct {
+type SymbolExpr struct {
+	Value string
+}
+
+func (n SymbolExpr) expr() {}
+
+func (n SymbolExpr) String() string {
+	return n.Value
+}
+
+type NumberExpr struct {
 	Value float64
 }
 
-func (n NumberNode) node() {}
+func (n NumberExpr) expr() {}
 
-func (n NumberNode) String() string {
+func (n NumberExpr) String() string {
 	return fmt.Sprintf("%v", n.Value)
 }
 
-type UnaryExprNode struct {
+type UnaryExpr struct {
 	Operator lexer.Token
-	Rhs      Node
+	Rhs      Expr
 }
 
-func (n UnaryExprNode) node() {}
+func (n UnaryExpr) expr() {}
 
-func (n UnaryExprNode) String() string {
+func (n UnaryExpr) String() string {
 	return fmt.Sprintf("%s%s", n.Operator.Value, n.Rhs)
 }
 
-type BinaryExprNode struct {
-	Lhs      Node
+type BinaryExpr struct {
+	Lhs      Expr
 	Operator lexer.Token
-	Rhs      Node
+	Rhs      Expr
 }
 
-func (n BinaryExprNode) node() {}
+func (n BinaryExpr) expr() {}
 
-func (n BinaryExprNode) String() string {
+func (n BinaryExpr) String() string {
 	return fmt.Sprintf("(%s %s %s)", n.Operator.Value, n.Lhs, n.Rhs)
 }
 
-type BlockExprNode struct {
-	Body []Node
+type BlockStmt struct {
+	Body []Stmt
 }
 
-func (n BlockExprNode) node() {}
+func (n BlockStmt) stmt() {}
 
-func (n BlockExprNode) String() string {
+func (n BlockStmt) String() string {
 	var sb strings.Builder
 	sb.WriteString("(")
 	for _, expr := range n.Body {
@@ -77,4 +105,32 @@ func (n BlockExprNode) String() string {
 	}
 	sb.WriteString(")")
 	return fmt.Sprintf(sb.String())
+}
+
+type ExpressionStmt struct {
+	Expr Expr
+}
+
+func (n ExpressionStmt) stmt() {}
+
+func (n ExpressionStmt) String() string {
+	return fmt.Sprintf("%s", n.Expr)
+}
+
+type FuncParm struct {
+	Name string
+	Type Type
+}
+
+type FuncDeclStmt struct {
+	Name       string
+	Parameters []FuncParm
+	ReturnType Type
+	Body       []Stmt
+}
+
+func (n FuncDeclStmt) stmt() {}
+
+func (n FuncDeclStmt) String() string {
+	return fmt.Sprintf("Func %s()", n.Name)
 }
