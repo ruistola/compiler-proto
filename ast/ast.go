@@ -25,7 +25,7 @@ type SymbolType struct {
 func (n SymbolType) _type() {}
 
 func (n SymbolType) String() string {
-	return n.Value
+	return fmt.Sprintf("(Type %s)", n.Value)
 }
 
 type ArrayType struct {
@@ -35,7 +35,7 @@ type ArrayType struct {
 func (n ArrayType) _type() {}
 
 func (n ArrayType) String() string {
-	return fmt.Sprintf("%s[]", n.UnderlyingType)
+	return fmt.Sprintf("(Type %s[])", n.UnderlyingType)
 }
 
 type StringExpr struct {
@@ -45,7 +45,7 @@ type StringExpr struct {
 func (n StringExpr) expr() {}
 
 func (n StringExpr) String() string {
-	return n.Value
+	return fmt.Sprintf("(String literal \"%s\")", n.Value)
 }
 
 type SymbolExpr struct {
@@ -55,7 +55,7 @@ type SymbolExpr struct {
 func (n SymbolExpr) expr() {}
 
 func (n SymbolExpr) String() string {
-	return n.Value
+	return fmt.Sprintf("(Symbol \"%s\")", n.Value)
 }
 
 type NumberExpr struct {
@@ -65,7 +65,7 @@ type NumberExpr struct {
 func (n NumberExpr) expr() {}
 
 func (n NumberExpr) String() string {
-	return fmt.Sprintf("%v", n.Value)
+	return fmt.Sprintf("(Number %v)", n.Value)
 }
 
 type UnaryExpr struct {
@@ -76,7 +76,7 @@ type UnaryExpr struct {
 func (n UnaryExpr) expr() {}
 
 func (n UnaryExpr) String() string {
-	return fmt.Sprintf("%s%s", n.Operator.Value, n.Rhs)
+	return fmt.Sprintf("(%s%s)", n.Operator.Value, n.Rhs)
 }
 
 type BinaryExpr struct {
@@ -101,7 +101,7 @@ func (n BlockStmt) String() string {
 	var sb strings.Builder
 	sb.WriteString("(")
 	for _, expr := range n.Body {
-		sb.WriteString(fmt.Sprintf("%s ", expr))
+		sb.WriteString(fmt.Sprintf("(Stmt %s) ", expr))
 	}
 	sb.WriteString(")")
 	return fmt.Sprintf(sb.String())
@@ -114,7 +114,7 @@ type ExpressionStmt struct {
 func (n ExpressionStmt) stmt() {}
 
 func (n ExpressionStmt) String() string {
-	return fmt.Sprintf("%s", n.Expr)
+	return fmt.Sprintf("(ExprStmt %s)", n.Expr)
 }
 
 type FuncParm struct {
@@ -126,11 +126,17 @@ type FuncDeclStmt struct {
 	Name       string
 	Parameters []FuncParm
 	ReturnType Type
-	Body       []Stmt
+	Body       BlockStmt
 }
 
 func (n FuncDeclStmt) stmt() {}
 
 func (n FuncDeclStmt) String() string {
-	return fmt.Sprintf("Func %s()", n.Name)
+	var returnType string
+	if n.ReturnType != nil {
+		returnType = fmt.Sprintf("%s", n.ReturnType)
+	} else {
+		returnType = "none"
+	}
+	return fmt.Sprintf("(Func name %s params (%s) returntype %s body { %s })", n.Name, n.Parameters, returnType, n.Body)
 }

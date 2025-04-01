@@ -214,15 +214,6 @@ type Token struct {
 	Value string
 }
 
-func (token Token) Debug() {
-	switch token.Type {
-	case IDENTIFIER, NUMBER, STRING:
-		fmt.Printf("%s:%s", token.Type, token.Value)
-	default:
-		fmt.Printf("%s", token.Type)
-	}
-}
-
 func tryMatchPattern(src string, re *regexp.Regexp, tokenType TokenType) (int, Token) {
 	matchRange := re.FindStringIndex(src)
 	if matchRange == nil {

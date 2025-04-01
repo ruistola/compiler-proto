@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"jru-test/ast"
 	"jru-test/lexer"
+	"slices"
 	"strconv"
 )
 
@@ -12,7 +13,7 @@ type parser struct {
 	pos    int
 }
 
-func (p *parser) peek() lexer.Token {
+func (p *parser) next() lexer.Token {
 	result := lexer.Token{}
 	if p.pos < len(p.tokens) {
 		result = p.tokens[p.pos]
@@ -20,23 +21,18 @@ func (p *parser) peek() lexer.Token {
 	return result
 }
 
-func (p *parser) advance() lexer.Token {
-	nextToken := p.peek()
-	p.pos++
-	return nextToken
-}
-
-func (p *parser) expect(expected lexer.TokenType) lexer.Token {
-	nextToken := p.advance()
-	if nextToken.Type != expected {
-		panic(fmt.Sprintf("Expected %s, found %s\n", expected, nextToken.Type))
+func (p *parser) consume(expected ...lexer.TokenType) lexer.Token {
+	token := p.next()
+	if len(expected) > 0 && !slices.Contains(expected, token.Type) {
+		panic(fmt.Sprintf("Expected %s, found %s\n", expected, token.Type))
 	}
-	return nextToken
+	p.pos++
+	return token
 }
 
 func headPrecedence(tokenType lexer.TokenType) int {
 	switch tokenType {
-	case lexer.EOF:
+	case lexer.EOF, lexer.SEMI_COLON:
 		return 0
 	case lexer.NUMBER, lexer.STRING, lexer.SYMBOL:
 		return 1
@@ -49,7 +45,7 @@ func headPrecedence(tokenType lexer.TokenType) int {
 
 func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 	switch tokenType {
-	case lexer.EOF:
+	case lexer.EOF, lexer.SEMI_COLON:
 		return 0, 0
 	case lexer.PLUS, lexer.DASH:
 		return 1, 2
@@ -67,14 +63,14 @@ func Parse(tokens []lexer.Token) ast.BlockStmt {
 
 func (p *parser) parseProgram() ast.BlockStmt {
 	program := ast.BlockStmt{}
-	for p.peek().Type != lexer.EOF {
-		program.Body = append(program.Body, p.parseExpressionStmt())
+	for p.next().Type != lexer.EOF {
+		program.Body = append(program.Body, p.parseStmt())
 	}
 	return program
 }
 
 func (p *parser) parseStmt() ast.Stmt {
-	switch p.peek().Type {
+	switch p.next().Type {
 	case lexer.FUNC:
 		return p.parseFuncDeclStmt()
 	default:
@@ -82,20 +78,66 @@ func (p *parser) parseStmt() ast.Stmt {
 	}
 }
 
+func (p *parser) parseArrayType(innerType ast.Type) ast.Type {
+	p.consume(lexer.OPEN_BRACKET)
+	p.consume(lexer.CLOSE_BRACKET)
+	arrayType := ast.ArrayType{
+		UnderlyingType: innerType,
+	}
+	if p.next().Type == lexer.OPEN_BRACKET {
+		return p.parseArrayType(arrayType)
+	}
+	return arrayType
+}
+
+func (p *parser) parseType() ast.Type {
+	name := p.consume(lexer.IDENTIFIER).Value
+	symbolType := ast.SymbolType{
+		Value: name,
+	}
+	if p.next().Type == lexer.OPEN_BRACKET {
+		return p.parseArrayType(symbolType)
+	}
+	return symbolType
+}
+
+func (p *parser) parseFuncParm() ast.FuncParm {
+	name := p.consume(lexer.IDENTIFIER).Value
+	p.consume(lexer.COLON)
+	parmType := p.parseType()
+	return ast.FuncParm{
+		Name: name,
+		Type: parmType,
+	}
+}
+
 func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
-	p.expect(lexer.FUNC)
-	name := p.expect(lexer.IDENTIFIER).Value
+	p.consume(lexer.FUNC)
+	name := p.consume(lexer.IDENTIFIER).Value
 
 	// Parse function parameter list
-	p.expect(lexer.OPEN_PAREN)
 	params := make([]ast.FuncParm, 0)
-	p.expect(lexer.CLOSE_PAREN)
+	p.consume(lexer.OPEN_PAREN)
+
+	// While not done with the parameter list...
+	for p.next().Type != lexer.CLOSE_PAREN {
+		// Parse one parameter (name, colon, type)
+		params = append(params, p.parseFuncParm())
+		// If followed by a comma, consume the comma and ensure that another parameter follows
+		if p.next().Type == lexer.COMMA {
+			p.consume(lexer.COMMA)
+			if p.next().Type != lexer.IDENTIFIER {
+				panic(fmt.Sprintf("Expected identifier after comma in function parameter list, found %s", p.next().Type))
+			}
+		}
+	}
+	p.consume(lexer.CLOSE_PAREN)
 
 	// is followed by a return type, if any
 	var returnType ast.Type
-	if p.peek().Type == lexer.COLON {
-		p.advance()
-		// TODO: parse type
+	if p.next().Type == lexer.COLON {
+		p.consume(lexer.COLON)
+		returnType = p.parseType()
 	}
 
 	// Parse function body
@@ -105,36 +147,36 @@ func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
 		Name:       name,
 		Parameters: params,
 		ReturnType: returnType,
-		Body:       funcBody.Body,
+		Body:       funcBody,
 	}
 }
 
 func (p *parser) parseExpressionStmt() ast.Stmt {
 	expr := p.parseExpr(0)
-	p.expect(lexer.SEMI_COLON)
+	p.consume(lexer.SEMI_COLON)
 	return ast.ExpressionStmt{
 		Expr: expr,
 	}
 }
 
 func (p *parser) parseBlockStmt() ast.BlockStmt {
-	p.expect(lexer.OPEN_CURLY)
+	p.consume(lexer.OPEN_CURLY)
 	body := []ast.Stmt{}
-	for nextToken := p.peek(); nextToken.Type != lexer.EOF && nextToken.Type != lexer.CLOSE_CURLY; nextToken = p.peek() {
+	for nextToken := p.next(); nextToken.Type != lexer.EOF && nextToken.Type != lexer.CLOSE_CURLY; nextToken = p.next() {
 		body = append(body, p.parseStmt())
 	}
-	p.expect(lexer.CLOSE_CURLY)
+	p.consume(lexer.CLOSE_CURLY)
 	return ast.BlockStmt{
 		Body: body,
 	}
 }
 
 func (p *parser) parseExpr(min_bp int) ast.Expr {
-	token := p.advance()
+	token := p.consume()
 	left := p.parseHeadExpr(token)
 
 	for {
-		nextToken := p.peek()
+		nextToken := p.next()
 		if lbp, rbp := tailPrecedence(nextToken.Type); lbp <= min_bp {
 			break
 		} else {
@@ -145,7 +187,7 @@ func (p *parser) parseExpr(min_bp int) ast.Expr {
 }
 
 func (p *parser) parseTailExpr(head ast.Expr, rbp int) ast.Expr {
-	token := p.advance()
+	token := p.consume()
 	switch token.Type {
 	case lexer.PLUS, lexer.DASH, lexer.STAR, lexer.SLASH:
 		tail := p.parseExpr(rbp)
