@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/yassinebenaid/godump"
 	"jru-test/lexer"
 	"jru-test/parser"
 	"os"
@@ -26,6 +27,7 @@ func main() {
 	durationParsing := time.Since(startParsing)
 	fmt.Printf("Parsed %s in %v.\n\n", filename, durationParsing)
 
-	fmt.Printf("Parsed AST:\n%s\n\n", ast)
+	fmt.Println("Parsed AST:")
+	godump.Dump(ast)
 	fmt.Printf("Done in %v.\n", durationTokenization+durationParsing)
 }
