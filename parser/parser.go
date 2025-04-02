@@ -173,17 +173,17 @@ func (p *parser) parseBlockStmt() ast.BlockStmt {
 
 func (p *parser) parseExpr(min_bp int) ast.Expr {
 	token := p.consume()
-	left := p.parseHeadExpr(token)
+	parsedExpr := p.parseHeadExpr(token)
 
 	for {
-		nextToken := p.next()
-		if lbp, rbp := tailPrecedence(nextToken.Type); lbp <= min_bp {
+		token = p.next()
+		if lbp, rbp := tailPrecedence(token.Type); lbp <= min_bp {
 			break
 		} else {
-			left = p.parseTailExpr(left, rbp)
+			parsedExpr = p.parseTailExpr(parsedExpr, rbp)
 		}
 	}
-	return left
+	return parsedExpr
 }
 
 func (p *parser) parseTailExpr(head ast.Expr, rbp int) ast.Expr {
