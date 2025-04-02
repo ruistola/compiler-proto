@@ -73,6 +73,8 @@ func (p *parser) parseStmt() ast.Stmt {
 	switch p.next().Type {
 	case lexer.FUNC:
 		return p.parseFuncDeclStmt()
+	case lexer.LET:
+		return p.parseVarDeclStmt()
 	default:
 		return p.parseExpressionStmt()
 	}
@@ -101,11 +103,31 @@ func (p *parser) parseType() ast.Type {
 	return symbolType
 }
 
-func (p *parser) parseFuncParm() ast.FuncParm {
+func (p *parser) parseVarDeclStmt() ast.VarDeclStmt {
+	p.consume(lexer.LET)
+	varName := p.consume(lexer.IDENTIFIER).Value
+	p.consume(lexer.COLON)
+	varType := p.parseType()
+	var initVal ast.Expr
+	if p.next().Type != lexer.SEMI_COLON {
+		p.consume(lexer.ASSIGNMENT)
+		initVal = p.parseExpr(0)
+	}
+	p.consume(lexer.SEMI_COLON)
+	return ast.VarDeclStmt{
+		Var: ast.TypedIdent{
+			Name: varName,
+			Type: varType,
+		},
+		InitVal: initVal,
+	}
+}
+
+func (p *parser) parseFuncParm() ast.TypedIdent {
 	name := p.consume(lexer.IDENTIFIER).Value
 	p.consume(lexer.COLON)
 	parmType := p.parseType()
-	return ast.FuncParm{
+	return ast.TypedIdent{
 		Name: name,
 		Type: parmType,
 	}
@@ -116,7 +138,7 @@ func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
 	name := p.consume(lexer.IDENTIFIER).Value
 
 	// Parse function parameter list
-	params := make([]ast.FuncParm, 0)
+	params := make([]ast.TypedIdent, 0)
 	p.consume(lexer.OPEN_PAREN)
 
 	// While not done with the parameter list...

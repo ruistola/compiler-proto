@@ -117,14 +117,31 @@ func (n ExpressionStmt) String() string {
 	return fmt.Sprintf("(ExprStmt %s)", n.Expr)
 }
 
-type FuncParm struct {
+type VarDeclStmt struct {
+	Var     TypedIdent
+	InitVal Expr
+}
+
+func (n VarDeclStmt) stmt() {}
+
+func (n VarDeclStmt) String() string {
+	var initVal string
+	if n.InitVal != nil {
+		initVal = fmt.Sprintf("%s", n.InitVal)
+	} else {
+		initVal = "none"
+	}
+	return fmt.Sprintf("(Var name %s type %s initial value %s)", n.Var.Name, n.Var.Type, initVal)
+}
+
+type TypedIdent struct {
 	Name string
 	Type Type
 }
 
 type FuncDeclStmt struct {
 	Name       string
-	Parameters []FuncParm
+	Parameters []TypedIdent
 	ReturnType Type
 	Body       BlockStmt
 }
