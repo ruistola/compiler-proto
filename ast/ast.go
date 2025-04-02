@@ -19,13 +19,13 @@ type Stmt interface {
 }
 
 type SymbolType struct {
-	Value string
+	TypeName string
 }
 
 func (n SymbolType) _type() {}
 
 func (n SymbolType) String() string {
-	return fmt.Sprintf("(Type %s)", n.Value)
+	return fmt.Sprintf("(Type %s)", n.TypeName)
 }
 
 type ArrayType struct {
@@ -156,4 +156,26 @@ func (n FuncDeclStmt) String() string {
 		returnType = "none"
 	}
 	return fmt.Sprintf("(Func name %s params (%s) returntype %s body { %s })", n.Name, n.Parameters, returnType, n.Body)
+}
+
+type IfStmt struct {
+	// TODO
+}
+
+func (n IfStmt) stmt() {}
+
+func (n IfStmt) String() string {
+	// TODO
+	return ""
+}
+
+type ForStmt struct {
+	// TODO
+}
+
+func (n ForStmt) stmt() {}
+
+func (n ForStmt) String() string {
+	// TODO
+	return ""
 }

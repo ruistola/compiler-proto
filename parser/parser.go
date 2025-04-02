@@ -95,7 +95,7 @@ func (p *parser) parseArrayType(innerType ast.Type) ast.Type {
 func (p *parser) parseType() ast.Type {
 	name := p.consume(lexer.IDENTIFIER).Value
 	symbolType := ast.SymbolType{
-		Value: name,
+		TypeName: name,
 	}
 	if p.next().Type == lexer.OPEN_BRACKET {
 		return p.parseArrayType(symbolType)
