@@ -110,3 +110,10 @@ type ForStmt struct {
 }
 
 func (n ForStmt) stmt() {}
+
+type AssignExpr struct {
+	Assigne       Expr
+	AssignedValue Expr
+}
+
+func (n AssignExpr) expr() {}
