@@ -71,8 +71,14 @@ func (p *parser) parseProgram() ast.BlockStmt {
 
 func (p *parser) parseStmt() ast.Stmt {
 	switch p.next().Type {
+	case lexer.OPEN_CURLY:
+		return p.parseBlockStmt()
 	case lexer.FUNC:
 		return p.parseFuncDeclStmt()
+	case lexer.IF:
+		return p.parseIfStmt()
+	case lexer.FOR:
+		return p.parseForStmt()
 	case lexer.LET:
 		return p.parseVarDeclStmt()
 	default:
@@ -170,6 +176,47 @@ func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
 		Parameters: params,
 		ReturnType: returnType,
 		Body:       funcBody,
+	}
+}
+
+func (p *parser) parseIfStmt() ast.Stmt {
+	p.consume(lexer.IF)
+
+	// Parse the condition enclosed by parens
+	p.consume(lexer.OPEN_PAREN)
+	cond := p.parseExpr(0)
+	p.consume(lexer.CLOSE_PAREN)
+
+	// Parse the consequent
+	thenStmt := p.parseStmt()
+
+	// Parse the alternate, if any
+	var elseStmt ast.Stmt
+	if p.next().Type == lexer.ELSE {
+		p.consume(lexer.ELSE)
+		elseStmt = p.parseStmt()
+	}
+
+	return ast.IfStmt{
+		Cond: cond,
+		Then: thenStmt,
+		Else: elseStmt,
+	}
+}
+
+func (p *parser) parseForStmt() ast.Stmt {
+	p.consume(lexer.FOR)
+	p.consume(lexer.OPEN_PAREN)
+	initStmt := p.parseStmt()
+	condExpr := p.parseExpressionStmt().(ast.ExpressionStmt).Expr
+	iterStmt := p.parseStmt()
+	p.consume(lexer.CLOSE_PAREN)
+	body := p.parseBlockStmt()
+	return ast.ForStmt{
+		Init: initStmt,
+		Cond: condExpr,
+		Iter: iterStmt,
+		Body: body.Body,
 	}
 }
 

@@ -64,6 +64,7 @@ const (
 	FALSE
 	FUNC
 	IF
+	ELSE
 	FOR
 
 	// Misc
@@ -117,6 +118,7 @@ var reservedKeywords map[string]TokenType = map[string]TokenType{
 	"false":  FALSE,
 	"func":   FUNC,
 	"if":     IF,
+	"else":   ELSE,
 	"for":    FOR,
 }
 
@@ -200,6 +202,8 @@ func (tokenType TokenType) String() string {
 		return "func"
 	case IF:
 		return "if"
+	case ELSE:
+		return "else"
 	case FOR:
 		return "for"
 	case STRUCT:

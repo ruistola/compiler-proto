@@ -95,13 +95,18 @@ type FuncDeclStmt struct {
 func (n FuncDeclStmt) stmt() {}
 
 type IfStmt struct {
-	// TODO
+	Cond Expr
+	Then Stmt
+	Else Stmt
 }
 
 func (n IfStmt) stmt() {}
 
 type ForStmt struct {
-	// TODO
+	Init Stmt
+	Cond Expr
+	Iter Stmt
+	Body []Stmt
 }
 
 func (n ForStmt) stmt() {}
