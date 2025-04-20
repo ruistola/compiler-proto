@@ -215,7 +215,7 @@ func (p *parser) parseForStmt() ast.Stmt {
 	p.consume(lexer.OPEN_PAREN)
 	initStmt := p.parseStmt()
 	condExpr := p.parseExpressionStmt().(ast.ExpressionStmt).Expr
-	iterStmt := p.parseStmt()
+	iterStmt := p.parseExpr(0)
 	p.consume(lexer.CLOSE_PAREN)
 	body := p.parseBlockStmt()
 	return ast.ForStmt{
@@ -246,15 +246,6 @@ func (p *parser) parseBlockStmt() ast.BlockStmt {
 	}
 }
 
-func (p *parser) parseAssingExpr(left ast.Expr, rbp int) ast.AssignExpr {
-	p.consume(lexer.ASSIGNMENT)
-	rhs := p.parseExpr(rbp)
-	return ast.AssignExpr{
-		Assigne:       left,
-		AssignedValue: rhs,
-	}
-}
-
 func (p *parser) parseExpr(min_bp int) ast.Expr {
 	token := p.consume()
 	parsedExpr := p.parseHeadExpr(token)
@@ -279,7 +270,9 @@ func (p *parser) parseTailExpr(head ast.Expr, rbp int) ast.Expr {
 			Assigne:       head,
 			AssignedValue: rhs,
 		}
-	case lexer.PLUS, lexer.DASH, lexer.STAR, lexer.SLASH, lexer.PERCENT, lexer.LESS, lexer.LESS_EQUALS, lexer.GREATER, lexer.GREATER_EQUALS:
+	case lexer.PLUS, lexer.DASH, lexer.STAR, lexer.SLASH, lexer.PERCENT,
+		lexer.LESS, lexer.LESS_EQUALS, lexer.GREATER, lexer.GREATER_EQUALS,
+		lexer.PLUS_EQUALS, lexer.MINUS_EQUALS:
 		tail := p.parseExpr(rbp)
 		return ast.BinaryExpr{
 			Lhs:      head,

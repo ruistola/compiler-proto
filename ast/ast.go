@@ -105,7 +105,7 @@ func (n IfStmt) stmt() {}
 type ForStmt struct {
 	Init Stmt
 	Cond Expr
-	Iter Stmt
+	Iter Expr
 	Body []Stmt
 }
 
