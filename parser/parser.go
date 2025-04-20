@@ -45,7 +45,7 @@ func headPrecedence(tokenType lexer.TokenType) int {
 
 func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 	switch tokenType {
-	case lexer.EOF, lexer.SEMI_COLON:
+	case lexer.EOF, lexer.SEMI_COLON, lexer.CLOSE_PAREN:
 		return 0, 0
 	case lexer.ASSIGNMENT, lexer.PLUS_EQUALS, lexer.MINUS_EQUALS:
 		return 1, 2

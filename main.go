@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	filename := "source4.jru"
+	filename := "source5.jru"
 	sourceBytes, _ := os.ReadFile(filename)
 	src := string(sourceBytes)
 
