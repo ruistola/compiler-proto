@@ -32,7 +32,7 @@ func (p *parser) consume(expected ...lexer.TokenType) lexer.Token {
 
 func headPrecedence(tokenType lexer.TokenType) int {
 	switch tokenType {
-	case lexer.EOF, lexer.SEMI_COLON:
+	case lexer.EOF, lexer.SEMI_COLON, lexer.OPEN_PAREN:
 		return 0
 	case lexer.NUMBER, lexer.STRING, lexer.SYMBOL:
 		return 1
@@ -57,6 +57,8 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 		return 7, 8
 	case lexer.STAR, lexer.SLASH, lexer.PERCENT:
 		return 9, 10
+	case lexer.OPEN_PAREN:
+		return 11, 0
 	default:
 		panic(fmt.Sprintf("Cannot determine binding power for '%s' as a tail token", tokenType))
 	}
@@ -226,6 +228,24 @@ func (p *parser) parseForStmt() ast.Stmt {
 	}
 }
 
+func (p *parser) parseFuncCallExpr(left ast.Expr) ast.FuncCallExpr {
+	args := []ast.Expr{}
+	for p.next().Type != lexer.CLOSE_PAREN {
+		// Parse the argument expression
+		args = append(args, p.parseExpr(0))
+
+		// If followed by a comma, consume the comma
+		if p.next().Type == lexer.COMMA {
+			p.consume(lexer.COMMA)
+		}
+	}
+	p.consume(lexer.CLOSE_PAREN)
+	return ast.FuncCallExpr{
+		Func: left,
+		Args: args,
+	}
+}
+
 func (p *parser) parseExpressionStmt() ast.Stmt {
 	expr := p.parseExpr(0)
 	p.consume(lexer.SEMI_COLON)
@@ -279,6 +299,8 @@ func (p *parser) parseTailExpr(head ast.Expr, rbp int) ast.Expr {
 			Operator: token,
 			Rhs:      tail,
 		}
+	case lexer.OPEN_PAREN:
+		return p.parseFuncCallExpr(head)
 	default:
 		panic(fmt.Sprintf("Failed to parse tail expression from token %v\n", token))
 	}
@@ -308,6 +330,13 @@ func (p *parser) parseHeadExpr(token lexer.Token) ast.Expr {
 		return ast.UnaryExpr{
 			Operator: token,
 			Rhs:      rhs,
+		}
+	case lexer.OPEN_PAREN:
+		rbp := headPrecedence(token.Type)
+		rhs := p.parseExpr(rbp)
+		p.consume(lexer.CLOSE_PAREN)
+		return ast.GroupExpr{
+			Expr: rhs,
 		}
 	default:
 		panic(fmt.Sprintf("Failed to parse head expression from token %v\n", token))

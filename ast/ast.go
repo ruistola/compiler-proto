@@ -73,6 +73,12 @@ type ExpressionStmt struct {
 
 func (n ExpressionStmt) stmt() {}
 
+type GroupExpr struct {
+	Expr Expr
+}
+
+func (n GroupExpr) expr() {}
+
 type VarDeclStmt struct {
 	Var     TypedIdent
 	InitVal Expr
@@ -93,6 +99,13 @@ type FuncDeclStmt struct {
 }
 
 func (n FuncDeclStmt) stmt() {}
+
+type FuncCallExpr struct {
+	Func Expr
+	Args []Expr
+}
+
+func (n FuncCallExpr) expr() {}
 
 type IfStmt struct {
 	Cond Expr
