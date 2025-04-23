@@ -13,7 +13,7 @@ type parser struct {
 	pos    int
 }
 
-func (p *parser) next() lexer.Token {
+func (p *parser) peek() lexer.Token {
 	result := lexer.Token{}
 	if p.pos < len(p.tokens) {
 		result = p.tokens[p.pos]
@@ -22,7 +22,7 @@ func (p *parser) next() lexer.Token {
 }
 
 func (p *parser) consume(expected ...lexer.TokenType) lexer.Token {
-	token := p.next()
+	token := p.peek()
 	if len(expected) > 0 && !slices.Contains(expected, token.Type) {
 		panic(fmt.Sprintf("Expected %s, found %s\n", expected, token.Type))
 	}
@@ -71,14 +71,14 @@ func Parse(tokens []lexer.Token) ast.BlockStmt {
 
 func (p *parser) parseProgram() ast.BlockStmt {
 	program := ast.BlockStmt{}
-	for p.next().Type != lexer.EOF {
+	for p.peek().Type != lexer.EOF {
 		program.Body = append(program.Body, p.parseStmt())
 	}
 	return program
 }
 
 func (p *parser) parseStmt() ast.Stmt {
-	switch p.next().Type {
+	switch p.peek().Type {
 	case lexer.OPEN_CURLY:
 		return p.parseBlockStmt()
 	case lexer.FUNC:
@@ -100,7 +100,7 @@ func (p *parser) parseArrayType(innerType ast.Type) ast.Type {
 	arrayType := ast.ArrayType{
 		UnderlyingType: innerType,
 	}
-	if p.next().Type == lexer.OPEN_BRACKET {
+	if p.peek().Type == lexer.OPEN_BRACKET {
 		return p.parseArrayType(arrayType)
 	}
 	return arrayType
@@ -111,7 +111,7 @@ func (p *parser) parseType() ast.Type {
 	symbolType := ast.SymbolType{
 		TypeName: name,
 	}
-	if p.next().Type == lexer.OPEN_BRACKET {
+	if p.peek().Type == lexer.OPEN_BRACKET {
 		return p.parseArrayType(symbolType)
 	}
 	return symbolType
@@ -123,7 +123,7 @@ func (p *parser) parseVarDeclStmt() ast.VarDeclStmt {
 	p.consume(lexer.COLON)
 	varType := p.parseType()
 	var initVal ast.Expr
-	if p.next().Type != lexer.SEMI_COLON {
+	if p.peek().Type != lexer.SEMI_COLON {
 		p.consume(lexer.ASSIGNMENT)
 		initVal = p.parseExpr(0)
 	}
@@ -156,14 +156,14 @@ func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
 	p.consume(lexer.OPEN_PAREN)
 
 	// While not done with the parameter list...
-	for p.next().Type != lexer.CLOSE_PAREN {
+	for p.peek().Type != lexer.CLOSE_PAREN {
 		// Parse one parameter (name, colon, type)
 		params = append(params, p.parseFuncParm())
 		// If followed by a comma, consume the comma and ensure that another parameter follows
-		if p.next().Type == lexer.COMMA {
+		if p.peek().Type == lexer.COMMA {
 			p.consume(lexer.COMMA)
-			if p.next().Type != lexer.IDENTIFIER {
-				panic(fmt.Sprintf("Expected identifier after comma in function parameter list, found %s", p.next().Type))
+			if p.peek().Type != lexer.IDENTIFIER {
+				panic(fmt.Sprintf("Expected identifier after comma in function parameter list, found %s", p.peek().Type))
 			}
 		}
 	}
@@ -171,7 +171,7 @@ func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
 
 	// is followed by a return type, if any
 	var returnType ast.Type
-	if p.next().Type == lexer.COLON {
+	if p.peek().Type == lexer.COLON {
 		p.consume(lexer.COLON)
 		returnType = p.parseType()
 	}
@@ -200,7 +200,7 @@ func (p *parser) parseIfStmt() ast.Stmt {
 
 	// Parse the alternate, if any
 	var elseStmt ast.Stmt
-	if p.next().Type == lexer.ELSE {
+	if p.peek().Type == lexer.ELSE {
 		p.consume(lexer.ELSE)
 		elseStmt = p.parseStmt()
 	}
@@ -230,12 +230,12 @@ func (p *parser) parseForStmt() ast.Stmt {
 
 func (p *parser) parseFuncCallExpr(left ast.Expr) ast.FuncCallExpr {
 	args := []ast.Expr{}
-	for p.next().Type != lexer.CLOSE_PAREN {
+	for p.peek().Type != lexer.CLOSE_PAREN {
 		// Parse the argument expression
 		args = append(args, p.parseExpr(0))
 
 		// If followed by a comma, consume the comma
-		if p.next().Type == lexer.COMMA {
+		if p.peek().Type == lexer.COMMA {
 			p.consume(lexer.COMMA)
 		}
 	}
@@ -257,7 +257,7 @@ func (p *parser) parseExpressionStmt() ast.Stmt {
 func (p *parser) parseBlockStmt() ast.BlockStmt {
 	p.consume(lexer.OPEN_CURLY)
 	body := []ast.Stmt{}
-	for nextToken := p.next(); nextToken.Type != lexer.EOF && nextToken.Type != lexer.CLOSE_CURLY; nextToken = p.next() {
+	for nextToken := p.peek(); nextToken.Type != lexer.EOF && nextToken.Type != lexer.CLOSE_CURLY; nextToken = p.peek() {
 		body = append(body, p.parseStmt())
 	}
 	p.consume(lexer.CLOSE_CURLY)
@@ -271,7 +271,7 @@ func (p *parser) parseExpr(min_bp int) ast.Expr {
 	parsedExpr := p.parseHeadExpr(token)
 
 	for {
-		token = p.next()
+		token = p.peek()
 		if lbp, rbp := tailPrecedence(token.Type); lbp <= min_bp {
 			break
 		} else {
