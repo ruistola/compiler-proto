@@ -1,0 +1,7 @@
+struct MyStruct {
+    foo: i32
+    bar: utf8[]
+}
+
+func main(): void {
+}

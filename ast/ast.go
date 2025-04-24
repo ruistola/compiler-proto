@@ -100,6 +100,13 @@ type FuncDeclStmt struct {
 
 func (n FuncDeclStmt) stmt() {}
 
+type StructDeclStmt struct {
+	Name    string
+	Members []TypedIdent
+}
+
+func (n StructDeclStmt) stmt() {}
+
 type FuncCallExpr struct {
 	Func Expr
 	Args []Expr
