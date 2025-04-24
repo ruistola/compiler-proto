@@ -49,7 +49,7 @@ func headPrecedence(tokenType lexer.TokenType) int {
 
 func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 	switch tokenType {
-	case lexer.EOF, lexer.SEMI_COLON, lexer.CLOSE_PAREN, lexer.COMMA, lexer.CLOSE_CURLY:
+	case lexer.EOF, lexer.SEMI_COLON, lexer.CLOSE_PAREN, lexer.COMMA, lexer.CLOSE_CURLY, lexer.CLOSE_BRACKET:
 		return 0, 0
 	case lexer.ASSIGNMENT, lexer.PLUS_EQUALS, lexer.MINUS_EQUALS:
 		return 1, 2
@@ -61,7 +61,7 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 		return 7, 8
 	case lexer.STAR, lexer.SLASH, lexer.PERCENT:
 		return 9, 10
-	case lexer.OPEN_PAREN, lexer.OPEN_CURLY:
+	case lexer.OPEN_PAREN, lexer.OPEN_CURLY, lexer.OPEN_BRACKET:
 		return 11, 0
 	default:
 		panic(fmt.Sprintf("Cannot determine binding power for '%s' as a tail token", tokenType))
@@ -182,6 +182,8 @@ func (p *parser) parseTailExpr(head ast.Expr, rbp int) ast.Expr {
 		return p.parseFuncCallExpr(head)
 	case lexer.OPEN_CURLY:
 		return p.parseStructLiteralExpr(head)
+	case lexer.OPEN_BRACKET:
+		return p.parseArrayIndexExpr(head)
 	default:
 		panic(fmt.Sprintf("Failed to parse tail expression from token %v\n", token))
 	}
@@ -377,6 +379,15 @@ func (p *parser) parseStructLiteralExpr(left ast.Expr) ast.StructLiteralExpr {
 	return ast.StructLiteralExpr{
 		Struct:  left,
 		Members: members,
+	}
+}
+
+func (p *parser) parseArrayIndexExpr(left ast.Expr) ast.ArrayIndexExpr {
+	indexExpr := p.parseExpr(0)
+	p.consume(lexer.CLOSE_BRACKET)
+	return ast.ArrayIndexExpr{
+		Array: left,
+		Index: indexExpr,
 	}
 }
 

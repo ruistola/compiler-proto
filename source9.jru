@@ -1,0 +1,8 @@
+func main(): void {
+    let x: i32 = 0;
+    let arr: i32[];
+    push(arr, 69);
+    push(arr, 420);
+    print(arr[x * 2 + 1]);
+}
+
