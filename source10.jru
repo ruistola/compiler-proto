@@ -3,8 +3,9 @@ struct Arg {
     val: string
 }
 
-func main(argc: i32, argv: string): void {
+func main(argc: i32, argv: string[]): void {
     let arguments: Arg[];
+    // Drop arg 0 as it's just the executable
     for (let i:i32 = 1; i < argc; i += 1) {
         let arg: Arg = Arg{
             pos: i,
