@@ -41,7 +41,7 @@ type SymbolExpr struct {
 func (n SymbolExpr) expr() {}
 
 type NumberExpr struct {
-	Value float64
+	Value string
 }
 
 func (n NumberExpr) expr() {}
@@ -100,6 +100,13 @@ type FuncDeclStmt struct {
 
 func (n FuncDeclStmt) stmt() {}
 
+type FuncCallExpr struct {
+	Func Expr
+	Args []Expr
+}
+
+func (n FuncCallExpr) expr() {}
+
 type StructDeclStmt struct {
 	Name    string
 	Members []TypedIdent
@@ -107,12 +114,12 @@ type StructDeclStmt struct {
 
 func (n StructDeclStmt) stmt() {}
 
-type FuncCallExpr struct {
-	Func Expr
-	Args []Expr
+type StructLiteralExpr struct {
+	Struct  Expr
+	Members []AssignExpr
 }
 
-func (n FuncCallExpr) expr() {}
+func (n StructLiteralExpr) expr() {}
 
 type IfStmt struct {
 	Cond Expr
