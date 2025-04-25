@@ -123,16 +123,16 @@ func (p *parser) parseExpr(min_bp int) ast.Expr {
 func (p *parser) parseHeadExpr(token lexer.Token) ast.Expr {
 	switch token.Type {
 	case lexer.NUMBER:
-		return ast.NumberExpr{
-			Value: token.Value,
+		return ast.NumberLiteralExpr{
+			Number: token.Value,
 		}
 	case lexer.STRING:
-		return ast.StringExpr{
-			Value: token.Value,
+		return ast.StringLiteralExpr{
+			String: token.Value,
 		}
 	case lexer.IDENTIFIER:
 		return ast.SymbolExpr{
-			Value: token.Value,
+			Symbol: token.Value,
 		}
 	case lexer.PLUS, lexer.DASH:
 		rbp := headPrecedence(token.Type)
@@ -371,7 +371,7 @@ func (p *parser) parseStructLiteralExpr(left ast.Expr) ast.StructLiteralExpr {
 		value := p.parseExpr(0)
 		members = append(members, ast.AssignExpr{
 			Assigne: ast.SymbolExpr{
-				Value: memberName,
+				Symbol: memberName,
 			},
 			AssignedValue: value,
 		})
@@ -390,7 +390,7 @@ func (p *parser) parseStructMemberExpr(left ast.Expr) ast.StructMemberExpr {
 	return ast.StructMemberExpr{
 		Struct: left,
 		Member: ast.SymbolExpr{
-			Value: p.consume(lexer.IDENTIFIER).Value,
+			Symbol: p.consume(lexer.IDENTIFIER).Value,
 		},
 	}
 }
@@ -398,6 +398,7 @@ func (p *parser) parseStructMemberExpr(left ast.Expr) ast.StructMemberExpr {
 func (p *parser) parseArrayIndexExpr(left ast.Expr) ast.ArrayIndexExpr {
 	indexExpr := p.parseExpr(0)
 	p.consume(lexer.CLOSE_BRACKET)
+
 	return ast.ArrayIndexExpr{
 		Array: left,
 		Index: indexExpr,

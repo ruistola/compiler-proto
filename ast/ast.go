@@ -20,38 +20,38 @@ type SymbolType struct {
 	TypeName string
 }
 
-func (n SymbolType) _type() {}
+func (t SymbolType) _type() {}
 
 type ArrayType struct {
 	UnderlyingType Type
 }
 
-func (n ArrayType) _type() {}
+func (t ArrayType) _type() {}
 
-type StringExpr struct {
-	Value string
+type StringLiteralExpr struct {
+	String string
 }
 
-func (n StringExpr) expr() {}
+func (e StringLiteralExpr) expr() {}
 
 type SymbolExpr struct {
-	Value string
+	Symbol string
 }
 
-func (n SymbolExpr) expr() {}
+func (e SymbolExpr) expr() {}
 
-type NumberExpr struct {
-	Value string
+type NumberLiteralExpr struct {
+	Number string
 }
 
-func (n NumberExpr) expr() {}
+func (e NumberLiteralExpr) expr() {}
 
 type UnaryExpr struct {
 	Operator lexer.Token
 	Rhs      Expr
 }
 
-func (n UnaryExpr) expr() {}
+func (e UnaryExpr) expr() {}
 
 type BinaryExpr struct {
 	Lhs      Expr
@@ -59,32 +59,32 @@ type BinaryExpr struct {
 	Rhs      Expr
 }
 
-func (n BinaryExpr) expr() {}
+func (e BinaryExpr) expr() {}
 
 type BlockStmt struct {
 	Body []Stmt
 }
 
-func (n BlockStmt) stmt() {}
+func (s BlockStmt) stmt() {}
 
 type ExpressionStmt struct {
 	Expr Expr
 }
 
-func (n ExpressionStmt) stmt() {}
+func (s ExpressionStmt) stmt() {}
 
 type GroupExpr struct {
 	Expr Expr
 }
 
-func (n GroupExpr) expr() {}
+func (e GroupExpr) expr() {}
 
 type VarDeclStmt struct {
 	Var     TypedIdent
 	InitVal Expr
 }
 
-func (n VarDeclStmt) stmt() {}
+func (s VarDeclStmt) stmt() {}
 
 type TypedIdent struct {
 	Name string
@@ -98,42 +98,42 @@ type FuncDeclStmt struct {
 	Body       BlockStmt
 }
 
-func (n FuncDeclStmt) stmt() {}
+func (s FuncDeclStmt) stmt() {}
 
 type FuncCallExpr struct {
 	Func Expr
 	Args []Expr
 }
 
-func (n FuncCallExpr) expr() {}
+func (e FuncCallExpr) expr() {}
 
 type StructDeclStmt struct {
 	Name    string
 	Members []TypedIdent
 }
 
-func (n StructDeclStmt) stmt() {}
+func (s StructDeclStmt) stmt() {}
 
 type StructLiteralExpr struct {
 	Struct  Expr
 	Members []AssignExpr
 }
 
-func (n StructLiteralExpr) expr() {}
+func (e StructLiteralExpr) expr() {}
 
 type StructMemberExpr struct {
 	Struct Expr
 	Member Expr
 }
 
-func (n StructMemberExpr) expr() {}
+func (e StructMemberExpr) expr() {}
 
 type ArrayIndexExpr struct {
 	Array Expr
 	Index Expr
 }
 
-func (n ArrayIndexExpr) expr() {}
+func (e ArrayIndexExpr) expr() {}
 
 type IfStmt struct {
 	Cond Expr
@@ -141,7 +141,7 @@ type IfStmt struct {
 	Else Stmt
 }
 
-func (n IfStmt) stmt() {}
+func (s IfStmt) stmt() {}
 
 type ForStmt struct {
 	Init Stmt
@@ -150,11 +150,11 @@ type ForStmt struct {
 	Body []Stmt
 }
 
-func (n ForStmt) stmt() {}
+func (s ForStmt) stmt() {}
 
 type AssignExpr struct {
 	Assigne       Expr
 	AssignedValue Expr
 }
 
-func (n AssignExpr) expr() {}
+func (e AssignExpr) expr() {}
