@@ -16,11 +16,11 @@ type Stmt interface {
 	stmt()
 }
 
-type SymbolType struct {
+type NamedType struct {
 	TypeName string
 }
 
-func (t SymbolType) _type() {}
+func (t NamedType) _type() {}
 
 type ArrayType struct {
 	UnderlyingType Type
@@ -34,11 +34,11 @@ type StringLiteralExpr struct {
 
 func (e StringLiteralExpr) expr() {}
 
-type SymbolExpr struct {
-	Symbol string
+type IdentExpr struct {
+	Name string
 }
 
-func (e SymbolExpr) expr() {}
+func (e IdentExpr) expr() {}
 
 type NumberLiteralExpr struct {
 	Number string

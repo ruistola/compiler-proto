@@ -10,7 +10,7 @@ type TokenType int
 const (
 	EOF        TokenType = iota
 	WHITESPACE           // pseudotype that will not participate in AST but is needed to unify the tokenization code
-	SYMBOL               // pseudotype that will be refined into a symbol specific TokenType or IDENTIFIER
+	WORD                 // pseudotype that will be refined into a keyword or IDENTIFIER
 	COMMENT              // pseudotype that will not participate in AST but may in the future be kept as metadata
 	NUMBER
 	STRING
@@ -78,7 +78,7 @@ type tokenPattern struct {
 
 var tokenPatterns []tokenPattern = []tokenPattern{
 	{WHITESPACE, regexp.MustCompile(`^\s+`)},
-	{SYMBOL, regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*`)},
+	{WORD, regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*`)},
 	{COMMENT, regexp.MustCompile(`^\/\/.*`)},
 	{NUMBER, regexp.MustCompile(`^[0-9]+(\.[0-9]+)?`)},
 	{STRING, regexp.MustCompile(`^"[^"]*"`)},
@@ -128,8 +128,8 @@ func (tokenType TokenType) String() string {
 		return "eof"
 	case WHITESPACE:
 		return "whitespace"
-	case SYMBOL:
-		return "symbol"
+	case WORD:
+		return "word"
 	case COMMENT:
 		return "comment"
 	case NUMBER:
@@ -231,7 +231,7 @@ func tryMatchPattern(src string, re *regexp.Regexp, tokenType TokenType) (int, T
 	match := src[:matchRange[1]]
 	length := matchRange[1]
 
-	if tokenType != SYMBOL {
+	if tokenType != WORD {
 		return length, Token{
 			Type:  tokenType,
 			Value: match,

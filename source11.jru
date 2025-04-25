@@ -8,6 +8,6 @@ func main(): void {
         a: 1,
         b: 1.0,
     };
-    print(-foo.a * -3.0);
+    print(-foo.a() * -3.0);
 }
 

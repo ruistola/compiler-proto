@@ -38,7 +38,7 @@ func headPrecedence(tokenType lexer.TokenType) int {
 	switch tokenType {
 	case lexer.EOF, lexer.SEMI_COLON, lexer.OPEN_PAREN:
 		return 0
-	case lexer.NUMBER, lexer.STRING, lexer.SYMBOL:
+	case lexer.NUMBER, lexer.STRING, lexer.WORD:
 		return 1
 	case lexer.PLUS, lexer.DASH:
 		return 9
@@ -61,10 +61,12 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 		return 7, 8
 	case lexer.STAR, lexer.SLASH, lexer.PERCENT:
 		return 9, 10
-	case lexer.OPEN_PAREN, lexer.OPEN_CURLY, lexer.OPEN_BRACKET:
+	case lexer.OPEN_CURLY:
 		return 11, 0
+	case lexer.OPEN_PAREN, lexer.OPEN_BRACKET:
+		return 12, 0
 	case lexer.DOT:
-		return 13, 5
+		return 14, 13
 	default:
 		panic(fmt.Sprintf("Cannot determine binding power for '%s' as a tail token", tokenType))
 	}
@@ -131,8 +133,8 @@ func (p *parser) parseHeadExpr(token lexer.Token) ast.Expr {
 			String: token.Value,
 		}
 	case lexer.IDENTIFIER:
-		return ast.SymbolExpr{
-			Symbol: token.Value,
+		return ast.IdentExpr{
+			Name: token.Value,
 		}
 	case lexer.PLUS, lexer.DASH:
 		rbp := headPrecedence(token.Type)
@@ -207,13 +209,13 @@ func (p *parser) parseArrayType(innerType ast.Type) ast.Type {
 
 func (p *parser) parseType() ast.Type {
 	name := p.consume(lexer.IDENTIFIER).Value
-	symbolType := ast.SymbolType{
+	namedType := ast.NamedType{
 		TypeName: name,
 	}
 	if p.peek().Type == lexer.OPEN_BRACKET {
-		return p.parseArrayType(symbolType)
+		return p.parseArrayType(namedType)
 	}
-	return symbolType
+	return namedType
 }
 
 func (p *parser) parseVarDeclStmt() ast.VarDeclStmt {
@@ -370,8 +372,8 @@ func (p *parser) parseStructLiteralExpr(left ast.Expr) ast.StructLiteralExpr {
 		p.consume(lexer.COLON)
 		value := p.parseExpr(0)
 		members = append(members, ast.AssignExpr{
-			Assigne: ast.SymbolExpr{
-				Symbol: memberName,
+			Assigne: ast.IdentExpr{
+				Name: memberName,
 			},
 			AssignedValue: value,
 		})
@@ -389,8 +391,8 @@ func (p *parser) parseStructLiteralExpr(left ast.Expr) ast.StructLiteralExpr {
 func (p *parser) parseStructMemberExpr(left ast.Expr) ast.StructMemberExpr {
 	return ast.StructMemberExpr{
 		Struct: left,
-		Member: ast.SymbolExpr{
-			Symbol: p.consume(lexer.IDENTIFIER).Value,
+		Member: ast.IdentExpr{
+			Name: p.consume(lexer.IDENTIFIER).Value,
 		},
 	}
 }
