@@ -121,6 +121,13 @@ type StructLiteralExpr struct {
 
 func (n StructLiteralExpr) expr() {}
 
+type StructMemberExpr struct {
+	Struct Expr
+	Member Expr
+}
+
+func (n StructMemberExpr) expr() {}
+
 type ArrayIndexExpr struct {
 	Array Expr
 	Index Expr
