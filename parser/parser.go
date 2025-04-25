@@ -56,11 +56,11 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 	case lexer.EQUALS, lexer.NOT_EQUALS:
 		return 3, 4
 	case lexer.LESS, lexer.LESS_EQUALS, lexer.GREATER, lexer.GREATER_EQUALS:
-		return 5, 6
+		return 6, 5
 	case lexer.PLUS, lexer.DASH:
-		return 7, 8
+		return 8, 7
 	case lexer.STAR, lexer.SLASH, lexer.PERCENT:
-		return 9, 10
+		return 10, 9
 	case lexer.OPEN_CURLY:
 		return 11, 0
 	case lexer.OPEN_PAREN, lexer.OPEN_BRACKET:
