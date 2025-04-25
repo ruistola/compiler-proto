@@ -28,20 +28,26 @@ type ArrayType struct {
 
 func (t ArrayType) _type() {}
 
+type BoolLiteralExpr struct {
+	Value bool
+}
+
+func (e BoolLiteralExpr) expr() {}
+
 type StringLiteralExpr struct {
-	String string
+	Value string
 }
 
 func (e StringLiteralExpr) expr() {}
 
 type IdentExpr struct {
-	Name string
+	Value string
 }
 
 func (e IdentExpr) expr() {}
 
 type NumberLiteralExpr struct {
-	Number string
+	Value string
 }
 
 func (e NumberLiteralExpr) expr() {}

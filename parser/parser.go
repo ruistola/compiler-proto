@@ -38,10 +38,10 @@ func headPrecedence(tokenType lexer.TokenType) int {
 	switch tokenType {
 	case lexer.EOF, lexer.SEMI_COLON, lexer.OPEN_PAREN:
 		return 0
-	case lexer.NUMBER, lexer.STRING, lexer.WORD:
+	case lexer.NUMBER, lexer.STRING, lexer.WORD, lexer.TRUE, lexer.FALSE:
 		return 1
 	case lexer.PLUS, lexer.DASH:
-		return 9
+		return 10
 	default:
 		panic(fmt.Sprintf("Cannot determine binding power for '%s' as a head token", tokenType))
 	}
@@ -126,15 +126,19 @@ func (p *parser) parseHeadExpr(token lexer.Token) ast.Expr {
 	switch token.Type {
 	case lexer.NUMBER:
 		return ast.NumberLiteralExpr{
-			Number: token.Value,
+			Value: token.Value,
 		}
 	case lexer.STRING:
 		return ast.StringLiteralExpr{
-			String: token.Value,
+			Value: token.Value,
 		}
 	case lexer.IDENTIFIER:
 		return ast.IdentExpr{
-			Name: token.Value,
+			Value: token.Value,
+		}
+	case lexer.TRUE, lexer.FALSE:
+		return ast.BoolLiteralExpr{
+			Value: (token.Type == lexer.TRUE),
 		}
 	case lexer.PLUS, lexer.DASH:
 		rbp := headPrecedence(token.Type)
@@ -373,7 +377,7 @@ func (p *parser) parseStructLiteralExpr(left ast.Expr) ast.StructLiteralExpr {
 		value := p.parseExpr(0)
 		members = append(members, ast.AssignExpr{
 			Assigne: ast.IdentExpr{
-				Name: memberName,
+				Value: memberName,
 			},
 			AssignedValue: value,
 		})
@@ -392,7 +396,7 @@ func (p *parser) parseStructMemberExpr(left ast.Expr) ast.StructMemberExpr {
 	return ast.StructMemberExpr{
 		Struct: left,
 		Member: ast.IdentExpr{
-			Name: p.consume(lexer.IDENTIFIER).Value,
+			Value: p.consume(lexer.IDENTIFIER).Value,
 		},
 	}
 }

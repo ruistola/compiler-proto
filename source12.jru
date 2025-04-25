@@ -1,0 +1,6 @@
+func main(): void {
+    let foo: bool = true;
+    foo = false;
+}
+
+
