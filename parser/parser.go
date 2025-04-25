@@ -14,23 +14,18 @@ type parser struct {
 
 func (p *parser) peek() lexer.Token {
 	result := lexer.Token{}
-
 	if p.pos < len(p.tokens) {
 		result = p.tokens[p.pos]
 	}
-
 	return result
 }
 
 func (p *parser) consume(expected ...lexer.TokenType) lexer.Token {
 	token := p.peek()
-
 	if len(expected) > 0 && !slices.Contains(expected, token.Type) {
 		panic(fmt.Sprintf("Expected %s, found %s\n", expected, token.Type))
 	}
-
 	p.pos++
-
 	return token
 }
 
@@ -74,16 +69,10 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 
 func Parse(tokens []lexer.Token) ast.BlockStmt {
 	p := parser{tokens, 0}
-	return p.parseProgram()
-}
-
-func (p *parser) parseProgram() ast.BlockStmt {
 	program := ast.BlockStmt{}
-
 	for p.peek().Type != lexer.EOF {
 		program.Body = append(program.Body, p.parseStmt())
 	}
-
 	return program
 }
 
@@ -109,7 +98,6 @@ func (p *parser) parseStmt() ast.Stmt {
 func (p *parser) parseExpr(min_bp int) ast.Expr {
 	token := p.consume()
 	parsedExpr := p.parseHeadExpr(token)
-
 	for {
 		nextToken := p.peek()
 		if lbp, rbp := tailPrecedence(nextToken.Type); lbp <= min_bp {
@@ -118,7 +106,6 @@ func (p *parser) parseExpr(min_bp int) ast.Expr {
 			parsedExpr = p.parseTailExpr(parsedExpr, rbp)
 		}
 	}
-
 	return parsedExpr
 }
 
@@ -179,12 +166,11 @@ func (p *parser) parseTailExpr(head ast.Expr, rbp int) ast.Expr {
 		lexer.GREATER_EQUALS,
 		lexer.PLUS_EQUALS,
 		lexer.MINUS_EQUALS:
-
-		tail := p.parseExpr(rbp)
+		rhs := p.parseExpr(rbp)
 		return ast.BinaryExpr{
 			Lhs:      head,
 			Operator: token,
-			Rhs:      tail,
+			Rhs:      rhs,
 		}
 	case lexer.OPEN_PAREN:
 		return p.parseFuncCallExpr(head)
@@ -245,20 +231,16 @@ func (p *parser) parseVarDeclStmt() ast.VarDeclStmt {
 func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
 	p.consume(lexer.FUNC)
 	name := p.consume(lexer.IDENTIFIER).Value
-
-	params := make([]ast.TypedIdent, 0)
 	p.consume(lexer.OPEN_PAREN)
-
+	params := make([]ast.TypedIdent, 0)
 	for p.peek().Type != lexer.CLOSE_PAREN {
 		paramName := p.consume(lexer.IDENTIFIER).Value
 		p.consume(lexer.COLON)
 		paramType := p.parseType()
-		newParam := ast.TypedIdent{
+		params = append(params, ast.TypedIdent{
 			Name: paramName,
 			Type: paramType,
-		}
-		params = append(params, newParam)
-
+		})
 		if p.peek().Type == lexer.COMMA {
 			p.consume(lexer.COMMA)
 			if p.peek().Type != lexer.IDENTIFIER {
@@ -267,15 +249,12 @@ func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
 		}
 	}
 	p.consume(lexer.CLOSE_PAREN)
-
 	var returnType ast.Type
 	if p.peek().Type == lexer.COLON {
 		p.consume(lexer.COLON)
 		returnType = p.parseType()
 	}
-
 	funcBody := p.parseBlockStmt()
-
 	return ast.FuncDeclStmt{
 		Name:       name,
 		Parameters: params,
@@ -288,13 +267,11 @@ func (p *parser) parseStructDeclStmt() ast.StructDeclStmt {
 	p.consume(lexer.STRUCT)
 	name := p.consume(lexer.IDENTIFIER).Value
 	p.consume(lexer.OPEN_CURLY)
-
 	members := make([]ast.TypedIdent, 0)
 	for p.peek().Type != lexer.CLOSE_CURLY {
 		memberName := p.consume(lexer.IDENTIFIER).Value
 		p.consume(lexer.COLON)
 		memberType := p.parseType()
-
 		newMember := ast.TypedIdent{
 			Name: memberName,
 			Type: memberType,
@@ -302,7 +279,6 @@ func (p *parser) parseStructDeclStmt() ast.StructDeclStmt {
 		members = append(members, newMember)
 	}
 	p.consume(lexer.CLOSE_CURLY)
-
 	return ast.StructDeclStmt{
 		Name:    name,
 		Members: members,
@@ -311,19 +287,15 @@ func (p *parser) parseStructDeclStmt() ast.StructDeclStmt {
 
 func (p *parser) parseIfStmt() ast.Stmt {
 	p.consume(lexer.IF)
-
 	p.consume(lexer.OPEN_PAREN)
 	cond := p.parseExpr(0)
 	p.consume(lexer.CLOSE_PAREN)
-
 	thenStmt := p.parseStmt()
-
 	var elseStmt ast.Stmt
 	if p.peek().Type == lexer.ELSE {
 		p.consume(lexer.ELSE)
 		elseStmt = p.parseStmt()
 	}
-
 	return ast.IfStmt{
 		Cond: cond,
 		Then: thenStmt,
@@ -333,15 +305,12 @@ func (p *parser) parseIfStmt() ast.Stmt {
 
 func (p *parser) parseForStmt() ast.Stmt {
 	p.consume(lexer.FOR)
-
 	p.consume(lexer.OPEN_PAREN)
 	initStmt := p.parseStmt()
 	condExpr := p.parseExpressionStmt().(ast.ExpressionStmt).Expr
 	iterStmt := p.parseExpr(0)
 	p.consume(lexer.CLOSE_PAREN)
-
 	body := p.parseBlockStmt()
-
 	return ast.ForStmt{
 		Init: initStmt,
 		Cond: condExpr,
@@ -352,16 +321,13 @@ func (p *parser) parseForStmt() ast.Stmt {
 
 func (p *parser) parseFuncCallExpr(left ast.Expr) ast.FuncCallExpr {
 	args := []ast.Expr{}
-
 	for p.peek().Type != lexer.CLOSE_PAREN {
 		args = append(args, p.parseExpr(0))
 		if p.peek().Type == lexer.COMMA {
 			p.consume(lexer.COMMA)
 		}
 	}
-
 	p.consume(lexer.CLOSE_PAREN)
-
 	return ast.FuncCallExpr{
 		Func: left,
 		Args: args,
@@ -370,7 +336,6 @@ func (p *parser) parseFuncCallExpr(left ast.Expr) ast.FuncCallExpr {
 
 func (p *parser) parseStructLiteralExpr(left ast.Expr) ast.StructLiteralExpr {
 	members := []ast.AssignExpr{}
-
 	for p.peek().Type != lexer.CLOSE_CURLY {
 		memberName := p.consume(lexer.IDENTIFIER).Value
 		p.consume(lexer.COLON)
@@ -383,9 +348,7 @@ func (p *parser) parseStructLiteralExpr(left ast.Expr) ast.StructLiteralExpr {
 		})
 		p.consume(lexer.COMMA)
 	}
-
 	p.consume(lexer.CLOSE_CURLY)
-
 	return ast.StructLiteralExpr{
 		Struct:  left,
 		Members: members,
@@ -404,7 +367,6 @@ func (p *parser) parseStructMemberExpr(left ast.Expr) ast.StructMemberExpr {
 func (p *parser) parseArrayIndexExpr(left ast.Expr) ast.ArrayIndexExpr {
 	indexExpr := p.parseExpr(0)
 	p.consume(lexer.CLOSE_BRACKET)
-
 	return ast.ArrayIndexExpr{
 		Array: left,
 		Index: indexExpr,
@@ -414,7 +376,6 @@ func (p *parser) parseArrayIndexExpr(left ast.Expr) ast.ArrayIndexExpr {
 func (p *parser) parseExpressionStmt() ast.Stmt {
 	expr := p.parseExpr(0)
 	p.consume(lexer.SEMI_COLON)
-
 	return ast.ExpressionStmt{
 		Expr: expr,
 	}
@@ -427,7 +388,6 @@ func (p *parser) parseBlockStmt() ast.BlockStmt {
 		body = append(body, p.parseStmt())
 	}
 	p.consume(lexer.CLOSE_CURLY)
-
 	return ast.BlockStmt{
 		Body: body,
 	}

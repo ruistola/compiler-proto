@@ -8,9 +8,9 @@ import (
 	"testing"
 )
 
-func TestParseAllSourceFiles(t *testing.T) {
+func TestParse(t *testing.T) {
 	// Find all .jru files in the project directory
-	files, err := filepath.Glob("*.jru")
+	files, err := filepath.Glob("examples/*.jru")
 	if err != nil {
 		t.Fatalf("Failed to find source files: %v", err)
 	}
