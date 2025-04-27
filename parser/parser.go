@@ -80,16 +80,16 @@ func (p *parser) parseStmt() ast.Stmt {
 	switch p.peek().Type {
 	case lexer.OPEN_CURLY:
 		return p.parseBlockStmt()
-	case lexer.FUNC:
-		return p.parseFuncDeclStmt()
+	case lexer.LET:
+		return p.parseVarDeclStmt()
 	case lexer.STRUCT:
 		return p.parseStructDeclStmt()
+	case lexer.FUNC:
+		return p.parseFuncDeclStmt()
 	case lexer.IF:
 		return p.parseIfStmt()
 	case lexer.FOR:
 		return p.parseForStmt()
-	case lexer.LET:
-		return p.parseVarDeclStmt()
 	default:
 		return p.parseExpressionStmt()
 	}
@@ -97,16 +97,16 @@ func (p *parser) parseStmt() ast.Stmt {
 
 func (p *parser) parseExpr(min_bp int) ast.Expr {
 	token := p.consume()
-	parsedExpr := p.parseHeadExpr(token)
+	leftExpr := p.parseHeadExpr(token)
 	for {
 		nextToken := p.peek()
 		if lbp, rbp := tailPrecedence(nextToken.Type); lbp <= min_bp {
 			break
 		} else {
-			parsedExpr = p.parseTailExpr(parsedExpr, rbp)
+			leftExpr = p.parseTailExpr(leftExpr, rbp)
 		}
 	}
-	return parsedExpr
+	return leftExpr
 }
 
 func (p *parser) parseHeadExpr(token lexer.Token) ast.Expr {
