@@ -26,6 +26,20 @@ func (p PrimitiveType) Equals(other Type) bool {
 	return false
 }
 
+func IsPrimitive(t Type, name string) bool {
+	if p, ok := t.(PrimitiveType); ok {
+		return p.Name == name
+	}
+	return false
+}
+
+func IsNumeric(t Type) bool {
+	if p, ok := t.(PrimitiveType); ok {
+		return p.Name == "i8" || p.Name == "i32" || p.Name == "i64" || p.Name == "f32" || p.Name == "f64"
+	}
+	return false
+}
+
 type ArrayType struct {
 	ElemType Type
 }
@@ -50,11 +64,11 @@ func (f FuncType) String() string {
 	params := ""
 	for i, param := range f.ParamTypes {
 		if i > 0 {
-			params += ", "
+			params += ","
 		}
 		params += param.String()
 	}
-	return fmt.Sprintf("func(%s): %s", params, f.ReturnType)
+	return fmt.Sprintf("func(%s):%s", params, f.ReturnType)
 }
 
 func (f FuncType) Equals(other Type) bool {
@@ -62,7 +76,7 @@ func (f FuncType) Equals(other Type) bool {
 	if !ok || len(f.ParamTypes) != len(o.ParamTypes) {
 		return false
 	}
-	if f.ReturnType.Equals(o.ReturnType) {
+	if !f.ReturnType.Equals(o.ReturnType) {
 		return false
 	}
 	for i, param := range f.ParamTypes {
@@ -91,24 +105,28 @@ func (s StructType) Equals(other Type) bool {
 
 type TypeEnv struct {
 	parent      *TypeEnv
-	varTypes    map[string]Type
+	vars        map[string]Type
 	structTypes map[string]StructType
+	funcs       map[string]string
+	funcTypes   map[string]FuncType
 }
 
 func NewTypeEnv(parent *TypeEnv) *TypeEnv {
 	return &TypeEnv{
 		parent:      parent,
-		varTypes:    make(map[string]Type),
+		vars:        make(map[string]Type),
 		structTypes: make(map[string]StructType),
+		funcs:       make(map[string]string),
+		funcTypes:   make(map[string]FuncType),
 	}
 }
 
 func (env *TypeEnv) DefineVar(name string, varType Type) {
-	env.varTypes[name] = varType
+	env.vars[name] = varType
 }
 
 func (env *TypeEnv) LookupVarType(name string) (Type, bool) {
-	if varType, ok := env.varTypes[name]; ok {
+	if varType, ok := env.vars[name]; ok {
 		return varType, true
 	}
 	if env.parent != nil {
@@ -117,7 +135,7 @@ func (env *TypeEnv) LookupVarType(name string) (Type, bool) {
 	return nil, false
 }
 
-func (env *TypeEnv) DefineStruct(name string, st StructType) {
+func (env *TypeEnv) DefineStructType(name string, st StructType) {
 	env.structTypes[name] = st
 }
 
@@ -129,6 +147,34 @@ func (env *TypeEnv) LookupStructType(name string) (StructType, bool) {
 		return env.parent.LookupStructType(name)
 	}
 	return StructType{}, false
+}
+
+func (env *TypeEnv) DefineFunc(name string, funcTypeName string) {
+	env.funcs[name] = funcTypeName
+}
+
+func (env *TypeEnv) LookupFunc(name string) (string, bool) {
+	if fn, ok := env.funcs[name]; ok {
+		return fn, true
+	}
+	if env.parent != nil {
+		return env.parent.LookupFunc(name)
+	}
+	return "", false
+}
+
+func (env *TypeEnv) DefineFuncType(name string, fn FuncType) {
+	env.funcTypes[name] = fn
+}
+
+func (env *TypeEnv) LookupFuncType(name string) (FuncType, bool) {
+	if fn, ok := env.funcTypes[name]; ok {
+		return fn, true
+	}
+	if env.parent != nil {
+		return env.parent.LookupFuncType(name)
+	}
+	return FuncType{}, false
 }
 
 type TypeChecker struct {
@@ -154,20 +200,6 @@ func NewTypeChecker() *TypeChecker {
 	}
 }
 
-func IsNumeric(t Type) bool {
-	if p, ok := t.(PrimitiveType); ok {
-		return p.Name == "i8" || p.Name == "i32" || p.Name == "i64" || p.Name == "f32" || p.Name == "f64"
-	}
-	return false
-}
-
-func IsPrimitive(t Type, name string) bool {
-	if p, ok := t.(PrimitiveType); ok {
-		return p.Name == name
-	}
-	return false
-}
-
 func (tc *TypeChecker) Err(msg string) {
 	tc.Errors = append(tc.Errors, msg)
 }
@@ -180,6 +212,9 @@ func (tc *TypeChecker) ResolveType(astType ast.Type) Type {
 		}
 		if structType, ok := tc.env.LookupStructType(t.TypeName); ok {
 			return structType
+		}
+		if funcType, ok := tc.env.LookupFuncType(t.TypeName); ok {
+			return funcType
 		}
 		tc.Err(fmt.Sprintf("undefined type: %s", t.TypeName))
 		return nil
@@ -261,13 +296,45 @@ func (tc *TypeChecker) CheckStructDeclStmt(stmt ast.StructDeclStmt) {
 		}
 		members[member.Name] = tc.ResolveType(member.Type)
 	}
-	tc.env.DefineStruct(stmt.Name, StructType{
+	tc.env.DefineStructType(stmt.Name, StructType{
 		Name:    stmt.Name,
 		Members: members,
 	})
 }
 
 func (tc *TypeChecker) CheckFuncDeclStmt(stmt ast.FuncDeclStmt) {
+	if _, ok := tc.env.LookupFuncType(stmt.Name); ok {
+		tc.Err(fmt.Sprintf("redeclared function %s in the same scope", stmt.Name))
+		return
+	}
+	returnType := tc.primitives["void"]
+	if stmt.ReturnType != nil {
+		returnType = tc.ResolveType(stmt.ReturnType)
+		if returnType == nil {
+			return
+		}
+	}
+	paramTypes := make([]Type, 0, len(stmt.Parameters))
+	paramEnv := NewTypeEnv(tc.env)
+	for _, param := range stmt.Parameters {
+		paramType := tc.ResolveType(param.Type)
+		if paramType == nil {
+			return
+		}
+		paramTypes = append(paramTypes, paramType)
+		paramEnv.DefineVar(param.Name, paramType)
+	}
+	funcType := FuncType{
+		ReturnType: returnType,
+		ParamTypes: paramTypes,
+	}
+	funcTypeName := fmt.Sprintf("%s", funcType)
+	tc.env.DefineFunc(stmt.Name, funcTypeName)
+	tc.env.DefineFuncType(funcTypeName, funcType)
+	oldEnv := tc.env
+	tc.env = paramEnv
+	tc.CheckBlockStmt(stmt.Body)
+	tc.env = oldEnv
 }
 
 func (tc *TypeChecker) CheckIfStmt(stmt ast.IfStmt) {
@@ -287,6 +354,11 @@ func (tc *TypeChecker) InferType(expr ast.Expr) Type {
 	case ast.IdentExpr:
 		if varType, ok := tc.env.LookupVarType(e.Value); ok {
 			return varType
+		}
+		if funcTypeName, ok := tc.env.LookupFunc(e.Value); ok {
+			if funcType, ok := tc.env.LookupFuncType(funcTypeName); ok {
+				return funcType
+			}
 		}
 		tc.Err(fmt.Sprintf("undefined variable: %s", e.Value))
 		return nil
@@ -373,7 +445,30 @@ func (tc *TypeChecker) CheckUnaryExpr(expr ast.UnaryExpr) Type {
 }
 
 func (tc *TypeChecker) CheckFuncCallExpr(expr ast.FuncCallExpr) Type {
-	return nil
+	funcType := tc.InferType(expr.Func)
+	if funcType == nil {
+		return nil
+	}
+	ft, ok := funcType.(FuncType)
+	if !ok {
+		tc.Err(fmt.Sprintf("cannot call non-function value of type %s", funcType))
+		return nil
+	}
+	if len(expr.Args) != len(ft.ParamTypes) {
+		tc.Err(fmt.Sprintf("wrong number of arguments, expected %d, found %d", len(ft.ParamTypes), len(expr.Args)))
+		return nil
+	}
+	for i, arg := range expr.Args {
+		argType := tc.InferType(arg)
+		if argType == nil {
+			return nil
+		}
+		if !ft.ParamTypes[i].Equals(argType) {
+			tc.Err(fmt.Sprintf("argument %d type mismatch: expected %s, found %s", i+1, ft.ParamTypes[i], argType))
+			return nil
+		}
+	}
+	return ft.ReturnType
 }
 
 func (tc *TypeChecker) CheckStructLiteralExpr(expr ast.StructLiteralExpr) Type {
