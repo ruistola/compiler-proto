@@ -213,9 +213,6 @@ func (tc *TypeChecker) ResolveType(astType ast.Type) Type {
 		if structType, ok := tc.env.LookupStructType(t.TypeName); ok {
 			return structType
 		}
-		if funcType, ok := tc.env.LookupFuncType(t.TypeName); ok {
-			return funcType
-		}
 		tc.Err(fmt.Sprintf("undefined type: %s", t.TypeName))
 		return nil
 	case ast.ArrayType:
@@ -224,6 +221,23 @@ func (tc *TypeChecker) ResolveType(astType ast.Type) Type {
 			return nil
 		}
 		return ArrayType{ElemType: elemType}
+	case ast.FuncType:
+		paramTypes := []Type{}
+		for _, astParamType := range t.ParamTypes {
+			paramType := tc.ResolveType(astParamType)
+			if paramType == nil {
+				continue
+			}
+			paramTypes = append(paramTypes, paramType)
+		}
+		returnType := tc.ResolveType(t.ReturnType)
+		if returnType == nil {
+			return nil
+		}
+		return FuncType{
+			ReturnType: returnType,
+			ParamTypes: paramTypes,
+		}
 	default:
 		tc.Err(fmt.Sprintf("unknown type: %T", astType))
 		return nil
