@@ -352,9 +352,11 @@ func (tc *TypeChecker) CheckFuncDeclStmt(stmt ast.FuncDeclStmt) {
 }
 
 func (tc *TypeChecker) CheckIfStmt(stmt ast.IfStmt) {
+	// TODO
 }
 
 func (tc *TypeChecker) CheckForStmt(stmt ast.ForStmt) {
+	// TODO
 }
 
 func (tc *TypeChecker) InferType(expr ast.Expr) Type {
@@ -486,17 +488,21 @@ func (tc *TypeChecker) CheckFuncCallExpr(expr ast.FuncCallExpr) Type {
 }
 
 func (tc *TypeChecker) CheckStructLiteralExpr(expr ast.StructLiteralExpr) Type {
+	// TODO
 	return nil
 }
 
 func (tc *TypeChecker) CheckStructMemberExpr(expr ast.StructMemberExpr) Type {
+	// TODO
 	return nil
 }
 
 func (tc *TypeChecker) CheckArrayIndexExpr(expr ast.ArrayIndexExpr) Type {
+	// TODO
 	return nil
 }
 
 func (tc *TypeChecker) CheckAssignExpr(expr ast.AssignExpr) Type {
+	// TODO
 	return nil
 }
