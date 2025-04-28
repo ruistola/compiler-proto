@@ -249,6 +249,22 @@ func (tc *TypeChecker) CheckVarDeclStmt(stmt ast.VarDeclStmt) {
 }
 
 func (tc *TypeChecker) CheckStructDeclStmt(stmt ast.StructDeclStmt) {
+	if _, ok := tc.env.LookupStructType(stmt.Name); ok {
+		tc.Err(fmt.Sprintf("redeclared struct %s in the same scope", stmt.Name))
+		return
+	}
+	members := make(map[string]Type)
+	for _, member := range stmt.Members {
+		if _, ok := members[member.Name]; ok {
+			tc.Err(fmt.Sprintf("duplicate member %s in struct %s", member.Name, stmt.Name))
+			continue
+		}
+		members[member.Name] = tc.ResolveType(member.Type)
+	}
+	tc.env.DefineStruct(stmt.Name, StructType{
+		Name:    stmt.Name,
+		Members: members,
+	})
 }
 
 func (tc *TypeChecker) CheckFuncDeclStmt(stmt ast.FuncDeclStmt) {
