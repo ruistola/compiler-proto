@@ -11,16 +11,16 @@ type Type interface {
 	Equals(other Type) bool
 }
 
-type PrimType struct {
+type PrimitiveType struct {
 	Name string
 }
 
-func (p PrimType) String() string {
+func (p PrimitiveType) String() string {
 	return p.Name
 }
 
-func (p PrimType) Equals(other Type) bool {
-	if o, ok := other.(PrimType); ok {
+func (p PrimitiveType) Equals(other Type) bool {
+	if o, ok := other.(PrimitiveType); ok {
 		return p.Name == o.Name
 	}
 	return false
@@ -132,37 +132,37 @@ func (env *TypeEnv) LookupStructType(name string) (StructType, bool) {
 }
 
 type TypeChecker struct {
-	Errors []string
-	env    *TypeEnv
-	prims  map[string]Type
+	Errors     []string
+	env        *TypeEnv
+	primitives map[string]Type
 }
 
 func NewTypeChecker() *TypeChecker {
 	return &TypeChecker{
 		Errors: []string{},
 		env:    NewTypeEnv(nil),
-		prims: map[string]Type{
-			"void":   PrimType{Name: "void"},
-			"bool":   PrimType{Name: "bool"},
-			"string": PrimType{Name: "string"},
-			"i8":     PrimType{Name: "i8"},
-			"i32":    PrimType{Name: "i32"},
-			"i64":    PrimType{Name: "i64"},
-			"f32":    PrimType{Name: "f32"},
-			"f64":    PrimType{Name: "f64"},
+		primitives: map[string]Type{
+			"void":   PrimitiveType{Name: "void"},
+			"bool":   PrimitiveType{Name: "bool"},
+			"string": PrimitiveType{Name: "string"},
+			"i8":     PrimitiveType{Name: "i8"},
+			"i32":    PrimitiveType{Name: "i32"},
+			"i64":    PrimitiveType{Name: "i64"},
+			"f32":    PrimitiveType{Name: "f32"},
+			"f64":    PrimitiveType{Name: "f64"},
 		},
 	}
 }
 
 func IsNumeric(t Type) bool {
-	if p, ok := t.(PrimType); ok {
+	if p, ok := t.(PrimitiveType); ok {
 		return p.Name == "i8" || p.Name == "i32" || p.Name == "i64" || p.Name == "f32" || p.Name == "f64"
 	}
 	return false
 }
 
 func IsPrimitive(t Type, name string) bool {
-	if p, ok := t.(PrimType); ok {
+	if p, ok := t.(PrimitiveType); ok {
 		return p.Name == name
 	}
 	return false
@@ -175,7 +175,7 @@ func (tc *TypeChecker) Err(msg string) {
 func (tc *TypeChecker) ResolveType(astType ast.Type) Type {
 	switch t := astType.(type) {
 	case ast.NamedType:
-		if prim, ok := tc.prims[t.TypeName]; ok {
+		if prim, ok := tc.primitives[t.TypeName]; ok {
 			return prim
 		}
 		if structType, ok := tc.env.LookupStructType(t.TypeName); ok {
@@ -263,11 +263,11 @@ func (tc *TypeChecker) CheckForStmt(stmt ast.ForStmt) {
 func (tc *TypeChecker) InferType(expr ast.Expr) Type {
 	switch e := expr.(type) {
 	case ast.NumberLiteralExpr:
-		return tc.prims["i32"] // todo; evaluate the number literal to determine exact type
+		return tc.primitives["i32"] // todo; evaluate the number literal to determine exact type
 	case ast.StringLiteralExpr:
-		return tc.prims["string"]
+		return tc.primitives["string"]
 	case ast.BoolLiteralExpr:
-		return tc.prims["bool"]
+		return tc.primitives["bool"]
 	case ast.IdentExpr:
 		if varType, ok := tc.env.LookupVarType(e.Value); ok {
 			return varType
@@ -308,7 +308,7 @@ func (tc *TypeChecker) CheckBinaryExpr(expr ast.BinaryExpr) Type {
 			return leftType // no specific reason, just pick one arbitrarily until we have e.g. type promotion (i32 -> f32 etc.)
 		}
 		if expr.Operator.Type == lexer.PLUS && IsPrimitive(leftType, "string") && IsPrimitive(rightType, "string") {
-			return tc.prims["string"]
+			return tc.primitives["string"]
 		}
 		tc.Err(fmt.Sprintf("invalid operands for %s: %s and %s", expr.Operator.Value, leftType, rightType))
 		return nil
@@ -317,10 +317,10 @@ func (tc *TypeChecker) CheckBinaryExpr(expr ast.BinaryExpr) Type {
 			tc.Err(fmt.Sprintf("cannot compare %s and %s", leftType, rightType))
 			return nil
 		}
-		return tc.prims["bool"]
+		return tc.primitives["bool"]
 	case lexer.LESS, lexer.LESS_EQUALS, lexer.GREATER, lexer.GREATER_EQUALS:
 		if IsNumeric(leftType) && IsNumeric(rightType) {
-			return tc.prims["bool"]
+			return tc.primitives["bool"]
 		}
 		tc.Err(fmt.Sprintf("invalid operands for %s: %s and %s", expr.Operator.Value, leftType, rightType))
 		return nil
@@ -346,7 +346,7 @@ func (tc *TypeChecker) CheckUnaryExpr(expr ast.UnaryExpr) Type {
 		return nil
 	case lexer.NOT:
 		if IsPrimitive(operandType, "bool") {
-			return tc.prims["bool"]
+			return tc.primitives["bool"]
 		}
 		tc.Err(fmt.Sprintf("invalid operand for %s: %s", expr.Operator.Value, operandType))
 		return nil
