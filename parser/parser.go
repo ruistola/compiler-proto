@@ -198,6 +198,9 @@ func (p *parser) parseArrayType(innerType ast.Type) ast.Type {
 }
 
 func (p *parser) parseType() ast.Type {
+	if p.peek().Type == lexer.FUNC {
+		return p.parseFuncType()
+	}
 	name := p.consume(lexer.IDENTIFIER).Value
 	namedType := ast.NamedType{
 		TypeName: name,
@@ -206,6 +209,46 @@ func (p *parser) parseType() ast.Type {
 		return p.parseArrayType(namedType)
 	}
 	return namedType
+}
+
+func (p *parser) parseFuncType() ast.FuncType {
+	p.consume(lexer.FUNC)
+	p.consume(lexer.OPEN_PAREN)
+	paramTypes := []ast.Type{}
+	for p.peek().Type != lexer.CLOSE_PAREN {
+		if p.peek().Type == lexer.IDENTIFIER {
+			name := p.consume(lexer.IDENTIFIER).Value
+			if p.peek().Type == lexer.COLON {
+				p.consume(lexer.COLON)
+				paramType := p.parseType()
+				paramTypes = append(paramTypes, paramType)
+			} else {
+				paramTypes = append(paramTypes, ast.NamedType{
+					TypeName: name,
+				})
+			}
+		} else {
+			paramType := p.parseType()
+			paramTypes = append(paramTypes, paramType)
+		}
+		if p.peek().Type == lexer.COMMA {
+			p.consume(lexer.COMMA)
+		} else {
+			break
+		}
+	}
+	p.consume(lexer.CLOSE_PAREN)
+	var returnType ast.Type
+	if p.peek().Type == lexer.COLON {
+		p.consume(lexer.COLON)
+		returnType = p.parseType()
+	} else {
+		returnType = ast.NamedType{TypeName: "void"}
+	}
+	return ast.FuncType{
+		ReturnType: returnType,
+		ParamTypes: paramTypes,
+	}
 }
 
 func (p *parser) parseVarDeclStmt() ast.VarDeclStmt {

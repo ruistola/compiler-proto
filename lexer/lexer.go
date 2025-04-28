@@ -66,6 +66,7 @@ const (
 	IF
 	ELSE
 	FOR
+	RETURN
 
 	// Misc
 	NUM_TOKENS
@@ -120,6 +121,7 @@ var reservedKeywords map[string]TokenType = map[string]TokenType{
 	"if":     IF,
 	"else":   ELSE,
 	"for":    FOR,
+	"return": RETURN,
 }
 
 func (tokenType TokenType) String() string {
@@ -208,6 +210,8 @@ func (tokenType TokenType) String() string {
 		return "for"
 	case STRUCT:
 		return "struct"
+	case RETURN:
+		return "return"
 	default:
 		return fmt.Sprintf("unknown(%d)", tokenType)
 	}

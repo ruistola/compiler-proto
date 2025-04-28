@@ -28,6 +28,13 @@ type ArrayType struct {
 
 func (t ArrayType) _type() {}
 
+type FuncType struct {
+	ReturnType Type
+	ParamTypes []Type
+}
+
+func (t FuncType) _type() {}
+
 type BoolLiteralExpr struct {
 	Value bool
 }
