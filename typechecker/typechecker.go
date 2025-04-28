@@ -261,7 +261,39 @@ func (tc *TypeChecker) CheckForStmt(stmt ast.ForStmt) {
 }
 
 func (tc *TypeChecker) InferType(expr ast.Expr) Type {
-	return nil
+	switch e := expr.(type) {
+	case ast.NumberLiteralExpr:
+		return tc.prims["i32"] // todo; evaluate the number literal to determine exact type
+	case ast.StringLiteralExpr:
+		return tc.prims["string"]
+	case ast.BoolLiteralExpr:
+		return tc.prims["bool"]
+	case ast.IdentExpr:
+		if varType, ok := tc.env.LookupVarType(e.Value); ok {
+			return varType
+		}
+		tc.Err(fmt.Sprintf("undefined variable: %s", e.Value))
+		return nil
+	case ast.BinaryExpr:
+		return tc.CheckBinaryExpr(e)
+	case ast.UnaryExpr:
+		return tc.CheckUnaryExpr(e)
+	case ast.GroupExpr:
+		return tc.InferType(e.Expr)
+	case ast.FuncCallExpr:
+		return tc.CheckFuncCallExpr(e)
+	case ast.StructLiteralExpr:
+		return tc.CheckStructLiteralExpr(e)
+	case ast.StructMemberExpr:
+		return tc.CheckStructMemberExpr(e)
+	case ast.ArrayIndexExpr:
+		return tc.CheckArrayIndexExpr(e)
+	case ast.AssignExpr:
+		return tc.CheckAssignExpr(e)
+	default:
+		tc.Err(fmt.Sprintf("unknown expression type: %T", expr))
+		return nil
+	}
 }
 
 func (tc *TypeChecker) CheckBinaryExpr(expr ast.BinaryExpr) Type {
@@ -324,22 +356,22 @@ func (tc *TypeChecker) CheckUnaryExpr(expr ast.UnaryExpr) Type {
 	}
 }
 
-func (tc *TypeChecker) CheckFuncCall(expr ast.FuncCallExpr) Type {
+func (tc *TypeChecker) CheckFuncCallExpr(expr ast.FuncCallExpr) Type {
 	return nil
 }
 
-func (tc *TypeChecker) CheckStructLiteral(expr ast.StructLiteralExpr) Type {
+func (tc *TypeChecker) CheckStructLiteralExpr(expr ast.StructLiteralExpr) Type {
 	return nil
 }
 
-func (tc *TypeChecker) CheckStructMember(expr ast.StructMemberExpr) Type {
+func (tc *TypeChecker) CheckStructMemberExpr(expr ast.StructMemberExpr) Type {
 	return nil
 }
 
-func (tc *TypeChecker) CheckArrayIndex(expr ast.StructMemberExpr) Type {
+func (tc *TypeChecker) CheckArrayIndexExpr(expr ast.ArrayIndexExpr) Type {
 	return nil
 }
 
-func (tc *TypeChecker) CheckAssign(expr ast.AssignExpr) Type {
+func (tc *TypeChecker) CheckAssignExpr(expr ast.AssignExpr) Type {
 	return nil
 }
