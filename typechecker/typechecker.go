@@ -384,6 +384,9 @@ func (tc *TypeChecker) InferType(expr ast.Expr) Type {
 		if varType, ok := tc.env.LookupVarType(e.Value); ok {
 			return varType
 		}
+		if structType, ok := tc.env.LookupStructType(e.Value); ok {
+			return structType
+		}
 		if funcTypeName, ok := tc.env.LookupFunc(e.Value); ok {
 			if funcType, ok := tc.env.LookupFuncType(funcTypeName); ok {
 				return funcType
@@ -501,8 +504,48 @@ func (tc *TypeChecker) CheckFuncCallExpr(expr ast.FuncCallExpr) Type {
 }
 
 func (tc *TypeChecker) CheckStructLiteralExpr(expr ast.StructLiteralExpr) Type {
-	// TODO
-	return nil
+	var structType StructType
+	structTypeValue := tc.InferType(expr.Struct)
+	structType, ok := structTypeValue.(StructType)
+	if !ok {
+		tc.Err(fmt.Sprintf("expression of type %s cannot be used as a struct", structTypeValue))
+		return nil
+	}
+	assignedMembers := make(map[string]bool, len(structType.Members))
+	for memberName := range structType.Members {
+		assignedMembers[memberName] = false
+	}
+	for _, member := range expr.Members {
+		memberName, ok := member.Assigne.(ast.IdentExpr)
+		if !ok {
+			tc.Err(fmt.Sprintf("not a valid struct member identifier: %s", member.Assigne))
+			continue
+		}
+		assigneType, ok := structType.Members[memberName.Value]
+		if !ok {
+			tc.Err(fmt.Sprintf("%s is not a member of struct %s", memberName.Value, structType.Name))
+			continue
+		}
+		if assignedMembers[memberName.Value] == true {
+			tc.Err(fmt.Sprintf("struct member %s assigned multiple times", memberName.Value))
+			continue
+		}
+		assignedValueType := tc.InferType(member.AssignedValue)
+		if assignedValueType == nil {
+			continue
+		}
+		if !assigneType.Equals(assignedValueType) {
+			tc.Err(fmt.Sprintf("cannot assign %s to %s of struct member %s", assignedValueType, assigneType, memberName.Value))
+			continue
+		}
+		assignedMembers[memberName.Value] = true
+	}
+	for memberName, assigned := range assignedMembers {
+		if !assigned {
+			tc.Err(fmt.Sprintf("struct member %s is not assigned a value", memberName))
+		}
+	}
+	return structType
 }
 
 func (tc *TypeChecker) CheckStructMemberExpr(expr ast.StructMemberExpr) Type {
