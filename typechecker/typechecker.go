@@ -555,10 +555,16 @@ func (tc *TypeChecker) CheckStructMemberExpr(expr ast.StructMemberExpr) Type {
 
 func (tc *TypeChecker) CheckArrayIndexExpr(expr ast.ArrayIndexExpr) Type {
 	// TODO
+	// expr.Array must be a valid array
+	// expr.Index must be a numeric type
 	return nil
 }
 
 func (tc *TypeChecker) CheckAssignExpr(expr ast.AssignExpr) Type {
-	// TODO
-	return nil
+	assigneType := tc.InferType(expr.Assigne)
+	assignedValueType := tc.InferType(expr.AssignedValue)
+	if !assigneType.Equals(assignedValueType) {
+		tc.Err(fmt.Sprintf("cannot assign %s to %s", assignedValueType, assigneType))
+	}
+	return assigneType
 }
