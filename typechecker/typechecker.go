@@ -352,11 +352,24 @@ func (tc *TypeChecker) CheckFuncDeclStmt(stmt ast.FuncDeclStmt) {
 }
 
 func (tc *TypeChecker) CheckIfStmt(stmt ast.IfStmt) {
-	// TODO
+	condType := tc.InferType(stmt.Cond)
+	if !IsPrimitive(condType, "bool") {
+		tc.Err("if- statement condition does not evaluate to a boolean type")
+	}
+	tc.CheckStmt(stmt.Then)
+	if stmt.Else != nil {
+		tc.CheckStmt(stmt.Else)
+	}
 }
 
 func (tc *TypeChecker) CheckForStmt(stmt ast.ForStmt) {
-	// TODO
+	tc.CheckStmt(stmt.Init)
+	condType := tc.InferType(stmt.Cond)
+	if !IsPrimitive(condType, "bool") {
+		tc.Err("for- statement condition does not evaluate to a boolean type")
+	}
+	tc.CheckStmt(stmt.Iter)
+	tc.CheckBlockStmt(stmt.Body)
 }
 
 func (tc *TypeChecker) InferType(expr ast.Expr) Type {

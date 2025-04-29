@@ -351,14 +351,14 @@ func (p *parser) parseForStmt() ast.Stmt {
 	p.consume(lexer.OPEN_PAREN)
 	initStmt := p.parseStmt()
 	condExpr := p.parseExpressionStmt().(ast.ExpressionStmt).Expr
-	iterStmt := p.parseExpr(0)
+	iterStmt := ast.ExpressionStmt{Expr: p.parseExpr(0)}
 	p.consume(lexer.CLOSE_PAREN)
 	body := p.parseBlockStmt()
 	return ast.ForStmt{
 		Init: initStmt,
 		Cond: condExpr,
 		Iter: iterStmt,
-		Body: body.Body,
+		Body: body,
 	}
 }
 
