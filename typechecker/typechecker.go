@@ -549,8 +549,21 @@ func (tc *TypeChecker) CheckStructLiteralExpr(expr ast.StructLiteralExpr) Type {
 }
 
 func (tc *TypeChecker) CheckStructMemberExpr(expr ast.StructMemberExpr) Type {
-	// TODO
-	return nil
+	structTypeValue := tc.InferType(expr.Struct)
+	structType, ok := structTypeValue.(StructType)
+	if !ok {
+		tc.Err(fmt.Sprintf("expression of type %s cannot be used as a struct", structTypeValue))
+		return nil
+	}
+	memberName, ok := expr.Member.(ast.IdentExpr)
+	if !ok {
+		tc.Err(fmt.Sprintf("not a valid struct member identifier: %s", expr.Member))
+	}
+	memberType, ok := structType.Members[memberName.Value]
+	if !ok {
+		tc.Err(fmt.Sprintf("%s is not a member of struct %s", memberName.Value, structType.Name))
+	}
+	return memberType
 }
 
 func (tc *TypeChecker) CheckArrayIndexExpr(expr ast.ArrayIndexExpr) Type {
