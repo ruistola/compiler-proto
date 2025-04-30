@@ -444,8 +444,12 @@ func (tc *TypeChecker) CheckBinaryExpr(expr ast.BinaryExpr) Type {
 		}
 		tc.Err(fmt.Sprintf("invalid operands for %s: %s and %s", expr.Operator.Value, leftType, rightType))
 		return nil
-
-		// TODO: Add checks for all operators
+	case lexer.OR, lexer.AND:
+		if IsPrimitive(leftType, "bool") && IsPrimitive(rightType, "bool") {
+			return tc.primitives["bool"]
+		}
+		tc.Err(fmt.Sprintf("invalid operands for %s: %s and %s", expr.Operator.Value, leftType, rightType))
+		return nil
 	default:
 		tc.Err(fmt.Sprintf("unsupported binary operator: %s", expr.Operator.Value))
 		return nil
