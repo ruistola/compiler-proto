@@ -48,20 +48,22 @@ func tailPrecedence(tokenType lexer.TokenType) (int, int) {
 		return 0, 0
 	case lexer.ASSIGNMENT, lexer.PLUS_EQUALS, lexer.MINUS_EQUALS:
 		return 1, 2
+	case lexer.OR, lexer.AND:
+		return 4, 3
 	case lexer.EQUALS, lexer.NOT_EQUALS:
-		return 3, 4
+		return 5, 6
 	case lexer.LESS, lexer.LESS_EQUALS, lexer.GREATER, lexer.GREATER_EQUALS:
-		return 6, 5
-	case lexer.PLUS, lexer.DASH:
 		return 8, 7
-	case lexer.STAR, lexer.SLASH, lexer.PERCENT:
+	case lexer.PLUS, lexer.DASH:
 		return 10, 9
+	case lexer.STAR, lexer.SLASH, lexer.PERCENT:
+		return 12, 11
 	case lexer.OPEN_CURLY:
-		return 11, 0
+		return 13, 0
 	case lexer.OPEN_PAREN, lexer.OPEN_BRACKET:
-		return 12, 0
+		return 14, 0
 	case lexer.DOT:
-		return 14, 13
+		return 16, 15
 	default:
 		panic(fmt.Sprintf("Cannot determine binding power for '%s' as a tail token", tokenType))
 	}
@@ -149,10 +151,11 @@ func (p *parser) parseHeadExpr(token lexer.Token) ast.Expr {
 func (p *parser) parseTailExpr(head ast.Expr, rbp int) ast.Expr {
 	token := p.consume()
 	switch token.Type {
-	case lexer.ASSIGNMENT:
+	case lexer.ASSIGNMENT, lexer.PLUS_EQUALS, lexer.MINUS_EQUALS:
 		rhs := p.parseExpr(rbp)
 		return ast.AssignExpr{
 			Assigne:       head,
+			Operator:      token,
 			AssignedValue: rhs,
 		}
 	case lexer.PLUS,
@@ -163,9 +166,7 @@ func (p *parser) parseTailExpr(head ast.Expr, rbp int) ast.Expr {
 		lexer.LESS,
 		lexer.LESS_EQUALS,
 		lexer.GREATER,
-		lexer.GREATER_EQUALS,
-		lexer.PLUS_EQUALS,
-		lexer.MINUS_EQUALS:
+		lexer.GREATER_EQUALS:
 		rhs := p.parseExpr(rbp)
 		return ast.BinaryExpr{
 			Lhs:      head,

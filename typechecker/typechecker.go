@@ -586,8 +586,22 @@ func (tc *TypeChecker) CheckArrayIndexExpr(expr ast.ArrayIndexExpr) Type {
 func (tc *TypeChecker) CheckAssignExpr(expr ast.AssignExpr) Type {
 	assigneType := tc.InferType(expr.Assigne)
 	assignedValueType := tc.InferType(expr.AssignedValue)
-	if !assigneType.Equals(assignedValueType) {
-		tc.Err(fmt.Sprintf("cannot assign %s to %s", assignedValueType, assigneType))
+	switch expr.Operator.Type {
+	case lexer.ASSIGNMENT:
+		if !assigneType.Equals(assignedValueType) {
+			tc.Err(fmt.Sprintf("cannot assign %s to %s", assignedValueType, assigneType))
+		}
+	case lexer.PLUS_EQUALS:
+		numeric := IsNumeric(assigneType) && IsNumeric(assignedValueType)
+		strings := IsPrimitive(assigneType, "string") && IsPrimitive(assignedValueType, "string")
+		if !numeric && !strings {
+			tc.Err(fmt.Sprintf("invalid operands for %s: %s and %s", expr.Operator.Value, assigneType, assignedValueType))
+		}
+	case lexer.MINUS_EQUALS:
+		numeric := IsNumeric(assigneType) && IsNumeric(assignedValueType)
+		if !numeric {
+			tc.Err(fmt.Sprintf("invalid operands for %s: %s and %s", expr.Operator.Value, assigneType, assignedValueType))
+		}
 	}
 	return assigneType
 }

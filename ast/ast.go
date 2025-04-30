@@ -167,6 +167,7 @@ func (s ForStmt) stmt() {}
 
 type AssignExpr struct {
 	Assigne       Expr
+	Operator      lexer.Token
 	AssignedValue Expr
 }
 
