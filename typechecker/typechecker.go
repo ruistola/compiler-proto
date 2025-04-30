@@ -567,10 +567,20 @@ func (tc *TypeChecker) CheckStructMemberExpr(expr ast.StructMemberExpr) Type {
 }
 
 func (tc *TypeChecker) CheckArrayIndexExpr(expr ast.ArrayIndexExpr) Type {
-	// TODO
-	// expr.Array must be a valid array
-	// expr.Index must be a numeric type
-	return nil
+	if !IsNumeric(tc.InferType(expr.Index)) {
+		tc.Err(fmt.Sprintf("array index expression does not result in a numeric type: %s", expr.Index))
+		return nil
+	}
+	arrayExprType := tc.InferType(expr.Array)
+	if arrayExprType == nil {
+		return nil
+	}
+	arrayType, ok := arrayExprType.(ArrayType)
+	if !ok {
+		tc.Err(fmt.Sprintf("cannot index non-array type %s", arrayType))
+		return nil
+	}
+	return arrayType.ElemType
 }
 
 func (tc *TypeChecker) CheckAssignExpr(expr ast.AssignExpr) Type {
