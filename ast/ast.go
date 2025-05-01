@@ -129,7 +129,7 @@ func (s StructDeclStmt) stmt() {}
 
 type StructLiteralExpr struct {
 	Struct  Expr
-	Members []AssignExpr
+	Members []MemberAssignExpr
 }
 
 func (e StructLiteralExpr) expr() {}
@@ -172,3 +172,10 @@ type AssignExpr struct {
 }
 
 func (e AssignExpr) expr() {}
+
+type MemberAssignExpr struct {
+	Name  string
+	Value Expr
+}
+
+func (e MemberAssignExpr) expr() {}

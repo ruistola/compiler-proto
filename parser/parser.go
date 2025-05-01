@@ -379,16 +379,13 @@ func (p *parser) parseFuncCallExpr(left ast.Expr) ast.FuncCallExpr {
 }
 
 func (p *parser) parseStructLiteralExpr(left ast.Expr) ast.StructLiteralExpr {
-	members := []ast.AssignExpr{}
+	members := []ast.MemberAssignExpr{}
 	for p.peek().Type != lexer.CLOSE_CURLY {
 		memberName := p.consume(lexer.IDENTIFIER).Value
 		p.consume(lexer.COLON)
-		value := p.parseExpr(0)
-		members = append(members, ast.AssignExpr{
-			Assigne: ast.IdentExpr{
-				Value: memberName,
-			},
-			AssignedValue: value,
+		members = append(members, ast.MemberAssignExpr{
+			Name:  memberName,
+			Value: p.parseExpr(0),
 		})
 		p.consume(lexer.COMMA)
 	}

@@ -520,29 +520,24 @@ func (tc *TypeChecker) CheckStructLiteralExpr(expr ast.StructLiteralExpr) Type {
 		assignedMembers[memberName] = false
 	}
 	for _, member := range expr.Members {
-		memberName, ok := member.Assigne.(ast.IdentExpr)
+		assigneType, ok := structType.Members[member.Name]
 		if !ok {
-			tc.Err(fmt.Sprintf("not a valid struct member identifier: %s", member.Assigne))
+			tc.Err(fmt.Sprintf("%s is not a member of struct %s", member.Name, structType.Name))
 			continue
 		}
-		assigneType, ok := structType.Members[memberName.Value]
-		if !ok {
-			tc.Err(fmt.Sprintf("%s is not a member of struct %s", memberName.Value, structType.Name))
+		if assignedMembers[member.Name] == true {
+			tc.Err(fmt.Sprintf("struct member %s assigned multiple times", member.Name))
 			continue
 		}
-		if assignedMembers[memberName.Value] == true {
-			tc.Err(fmt.Sprintf("struct member %s assigned multiple times", memberName.Value))
-			continue
-		}
-		assignedValueType := tc.InferType(member.AssignedValue)
+		assignedValueType := tc.InferType(member.Value)
 		if assignedValueType == nil {
 			continue
 		}
 		if !assigneType.Equals(assignedValueType) {
-			tc.Err(fmt.Sprintf("cannot assign %s to %s of struct member %s", assignedValueType, assigneType, memberName.Value))
+			tc.Err(fmt.Sprintf("cannot assign %s to %s of struct member %s", assignedValueType, assigneType, member.Name))
 			continue
 		}
-		assignedMembers[memberName.Value] = true
+		assignedMembers[member.Name] = true
 	}
 	for memberName, assigned := range assignedMembers {
 		if !assigned {
