@@ -559,13 +559,9 @@ func (tc *TypeChecker) CheckStructMemberExpr(expr ast.StructMemberExpr) Type {
 		tc.Err(fmt.Sprintf("expression of type %s cannot be used as a struct", structTypeValue))
 		return nil
 	}
-	memberName, ok := expr.Member.(ast.IdentExpr)
+	memberType, ok := structType.Members[expr.Member.Value]
 	if !ok {
-		tc.Err(fmt.Sprintf("not a valid struct member identifier: %s", expr.Member))
-	}
-	memberType, ok := structType.Members[memberName.Value]
-	if !ok {
-		tc.Err(fmt.Sprintf("%s is not a member of struct %s", memberName.Value, structType.Name))
+		tc.Err(fmt.Sprintf("%s is not a member of struct %s", expr.Member.Value, structType.Name))
 	}
 	return memberType
 }

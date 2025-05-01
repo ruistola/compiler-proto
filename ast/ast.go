@@ -136,7 +136,7 @@ func (e StructLiteralExpr) expr() {}
 
 type StructMemberExpr struct {
 	Struct Expr
-	Member Expr
+	Member IdentExpr
 }
 
 func (e StructMemberExpr) expr() {}
@@ -159,7 +159,7 @@ func (s IfStmt) stmt() {}
 type ForStmt struct {
 	Init Stmt
 	Cond Expr
-	Iter Stmt
+	Iter ExpressionStmt
 	Body BlockStmt
 }
 
