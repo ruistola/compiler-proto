@@ -201,7 +201,8 @@ func NewTypeChecker() *TypeChecker {
 }
 
 func (tc *TypeChecker) Err(msg string) {
-	tc.Errors = append(tc.Errors, msg)
+	coloredMsg := fmt.Sprintf("\033[31mError: %s\033[0m", msg)
+	tc.Errors = append(tc.Errors, coloredMsg)
 }
 
 func (tc *TypeChecker) ResolveType(astType ast.Type) Type {

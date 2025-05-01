@@ -6,7 +6,7 @@ func main() {
     let foos: Foo[];
     let xs: i32[];
     let matrix: f32[][];
-    let x: i32 = foos[3] + 2;
+    let x: i32 = foos[3].i + 2;
     let y: i32 = xs[2+2];
     let z: f32 = matrix[1][2];
 }
