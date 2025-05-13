@@ -104,21 +104,26 @@ func (s StructType) Equals(other Type) bool {
 }
 
 type TypeEnv struct {
-	parent      *TypeEnv
-	vars        map[string]Type
-	structTypes map[string]StructType
-	funcs       map[string]string
-	funcTypes   map[string]FuncType
+	parent                *TypeEnv
+	vars                  map[string]Type
+	structTypes           map[string]StructType
+	funcs                 map[string]string
+	funcTypes             map[string]FuncType
+	currentFuncReturnType Type
 }
 
 func NewTypeEnv(parent *TypeEnv) *TypeEnv {
-	return &TypeEnv{
+	newTypeEnv := &TypeEnv{
 		parent:      parent,
 		vars:        make(map[string]Type),
 		structTypes: make(map[string]StructType),
 		funcs:       make(map[string]string),
 		funcTypes:   make(map[string]FuncType),
 	}
+	if parent != nil {
+		newTypeEnv.currentFuncReturnType = parent.currentFuncReturnType
+	}
+	return newTypeEnv
 }
 
 func (env *TypeEnv) DefineVar(name string, varType Type) {
@@ -274,6 +279,8 @@ func (tc *TypeChecker) CheckStmt(stmt ast.Stmt) {
 		tc.CheckIfStmt(s)
 	case ast.ForStmt:
 		tc.CheckForStmt(s)
+	case ast.ReturnStmt:
+		tc.CheckReturnStmt(s)
 	case ast.ExpressionStmt:
 		tc.InferType(s.Expr)
 	default:
@@ -330,14 +337,15 @@ func (tc *TypeChecker) CheckFuncDeclStmt(stmt ast.FuncDeclStmt) {
 		}
 	}
 	paramTypes := make([]Type, 0, len(stmt.Parameters))
-	paramEnv := NewTypeEnv(tc.env)
+	funcBodyEnv := NewTypeEnv(tc.env)
+	funcBodyEnv.currentFuncReturnType = returnType
 	for _, param := range stmt.Parameters {
 		paramType := tc.ResolveType(param.Type)
 		if paramType == nil {
 			return
 		}
 		paramTypes = append(paramTypes, paramType)
-		paramEnv.DefineVar(param.Name, paramType)
+		funcBodyEnv.DefineVar(param.Name, paramType)
 	}
 	funcType := FuncType{
 		ReturnType: returnType,
@@ -347,7 +355,7 @@ func (tc *TypeChecker) CheckFuncDeclStmt(stmt ast.FuncDeclStmt) {
 	tc.env.DefineFunc(stmt.Name, funcTypeName)
 	tc.env.DefineFuncType(funcTypeName, funcType)
 	oldEnv := tc.env
-	tc.env = paramEnv
+	tc.env = funcBodyEnv
 	tc.CheckBlockStmt(stmt.Body)
 	tc.env = oldEnv
 }
@@ -371,6 +379,29 @@ func (tc *TypeChecker) CheckForStmt(stmt ast.ForStmt) {
 	}
 	tc.CheckStmt(stmt.Iter)
 	tc.CheckBlockStmt(stmt.Body)
+}
+
+func (tc *TypeChecker) CheckReturnStmt(stmt ast.ReturnStmt) {
+	if tc.env.currentFuncReturnType == nil {
+		tc.Err("return statement outside of function")
+		return
+	}
+	isVoidReturn := IsPrimitive(tc.env.currentFuncReturnType, "void")
+	if stmt.Expr == nil {
+		if !isVoidReturn {
+			tc.Err(fmt.Sprintf("expected function to return %s", tc.env.currentFuncReturnType))
+		}
+		return
+	}
+	exprType := tc.InferType(stmt.Expr)
+	switch {
+	case exprType == nil:
+		return
+	case isVoidReturn:
+		tc.Err("cannot return a value from a void function")
+	case !exprType.Equals(tc.env.currentFuncReturnType):
+		tc.Err(fmt.Sprintf("return type mismatch: expected %s, found %s", tc.env.currentFuncReturnType, exprType))
+	}
 }
 
 func (tc *TypeChecker) InferType(expr ast.Expr) Type {

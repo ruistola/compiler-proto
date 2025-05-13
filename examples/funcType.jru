@@ -1,5 +1,8 @@
-func add(a: i32, b: i32): i32 {
-    a+b;
+func longFunctionNameThatWillMakeFormattingMultiLine(
+    reallyLongParameterName1: i32,
+    reallyLongParameterName2: i32,
+): i32 {
+    reallyLongParameterName1 + reallyLongParameterName2;
 }
 
 func main() {

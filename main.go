@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	filename := "examples/arrayTypes.jru"
+	filename := "examples/returnValue.jru"
 	sourceBytes, _ := os.ReadFile(filename)
 	src := string(sourceBytes)
 

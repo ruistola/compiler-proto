@@ -92,6 +92,8 @@ func (p *parser) parseStmt() ast.Stmt {
 		return p.parseIfStmt()
 	case lexer.FOR:
 		return p.parseForStmt()
+	case lexer.RETURN:
+		return p.parseReturnStmt()
 	default:
 		return p.parseExpressionStmt()
 	}
@@ -287,9 +289,6 @@ func (p *parser) parseFuncDeclStmt() ast.FuncDeclStmt {
 		})
 		if p.peek().Type == lexer.COMMA {
 			p.consume(lexer.COMMA)
-			if p.peek().Type != lexer.IDENTIFIER {
-				panic(fmt.Sprintf("Expected identifier after comma in function parameter list, found %s", p.peek().Type))
-			}
 		}
 	}
 	p.consume(lexer.CLOSE_PAREN)
@@ -321,6 +320,9 @@ func (p *parser) parseStructDeclStmt() ast.StructDeclStmt {
 			Type: memberType,
 		}
 		members = append(members, newMember)
+		if p.peek().Type == lexer.COMMA {
+			p.consume(lexer.COMMA)
+		}
 	}
 	p.consume(lexer.CLOSE_CURLY)
 	return ast.StructDeclStmt{
@@ -411,6 +413,17 @@ func (p *parser) parseArrayIndexExpr(left ast.Expr) ast.ArrayIndexExpr {
 	return ast.ArrayIndexExpr{
 		Array: left,
 		Index: indexExpr,
+	}
+}
+
+func (p *parser) parseReturnStmt() ast.ReturnStmt {
+	p.consume(lexer.RETURN)
+	if p.peek().Type == lexer.SEMI_COLON {
+		p.consume(lexer.SEMI_COLON)
+		return ast.ReturnStmt{Expr: nil}
+	}
+	return ast.ReturnStmt{
+		Expr: p.parseExpressionStmt().(ast.ExpressionStmt).Expr,
 	}
 }
 

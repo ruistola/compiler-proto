@@ -179,3 +179,9 @@ type MemberAssignExpr struct {
 }
 
 func (e MemberAssignExpr) expr() {}
+
+type ReturnStmt struct {
+	Expr Expr
+}
+
+func (s ReturnStmt) stmt() {}
