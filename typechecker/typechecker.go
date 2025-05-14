@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"jru-test/ast"
 	"jru-test/lexer"
+	"slices"
 )
 
 type Type interface {
@@ -357,6 +358,12 @@ func (tc *TypeChecker) CheckFuncDeclStmt(stmt ast.FuncDeclStmt) {
 	oldEnv := tc.env
 	tc.env = funcBodyEnv
 	tc.CheckBlockStmt(stmt.Body)
+	if returnType != nil && !IsPrimitive(returnType, "void") {
+		if !tc.BlockReturns(stmt.Body) {
+			tc.Err(fmt.Sprintf("function '%s' with return type %s does not return a value in all code paths", stmt.Name, returnType))
+		}
+	}
+	tc.CheckUnreachableCode(stmt.Body)
 	tc.env = oldEnv
 }
 
@@ -631,4 +638,55 @@ func (tc *TypeChecker) CheckAssignExpr(expr ast.AssignExpr) Type {
 		}
 	}
 	return assigneType
+}
+
+func (tc *TypeChecker) StmtReturns(stmt ast.Stmt) bool {
+	switch s := stmt.(type) {
+	case ast.BlockStmt:
+		return tc.BlockReturns(s)
+	case ast.ReturnStmt:
+		return true
+	case ast.IfStmt:
+		if s.Else == nil {
+			return false
+		}
+		return tc.StmtReturns(s.Then) && tc.StmtReturns(s.Else)
+	}
+	return false
+}
+
+func (tc *TypeChecker) BlockReturns(block ast.BlockStmt) bool {
+	if len(block.Body) == 0 {
+		return false
+	}
+	if slices.ContainsFunc(block.Body, func(stmt ast.Stmt) bool { return tc.StmtReturns(stmt) }) {
+		return true
+	}
+	return false
+}
+
+func (tc *TypeChecker) CheckUnreachableCode(block ast.BlockStmt) {
+	for i := range len(block.Body) - 1 {
+		if tc.StmtReturns(block.Body[i]) {
+			tc.Err(fmt.Sprintf("unreachable code after line %d", i+1))
+			break
+		}
+	}
+	for _, stmt := range block.Body {
+		switch s := stmt.(type) {
+		case ast.BlockStmt:
+			tc.CheckUnreachableCode(s)
+		case ast.IfStmt:
+			if thenBlock, ok := s.Then.(ast.BlockStmt); ok {
+				tc.CheckUnreachableCode(thenBlock)
+			}
+			if s.Else != nil {
+				if elseBlock, ok := s.Else.(ast.BlockStmt); ok {
+					tc.CheckUnreachableCode(elseBlock)
+				}
+			}
+		case ast.ForStmt:
+			tc.CheckUnreachableCode(s.Body)
+		}
+	}
 }
