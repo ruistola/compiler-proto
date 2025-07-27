@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"jru-test/lexer"
+	"github.com/ruistola/compiler-proto/lexer"
 )
 
 type Type interface {

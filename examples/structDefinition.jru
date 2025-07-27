@@ -1,6 +1,6 @@
 struct MyStruct {
     foo: i32,
-    bar: utf8[],
+    bar: string,
 }
 
 func main(): void {

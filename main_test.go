@@ -1,8 +1,8 @@
 package main
 
 import (
-	"jru-test/lexer"
-	"jru-test/parser"
+	"github.com/ruistola/compiler-proto/lexer"
+	"github.com/ruistola/compiler-proto/parser"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,7 +12,7 @@ func TestParse(t *testing.T) {
 	// Find all .jru files in the project directory
 	files, err := filepath.Glob("examples/*.jru")
 	if err != nil {
-		t.Fatalf("Failed to find source files: %v", err)
+		t.Fatalf("Failed to find source files : %v", err)
 	}
 
 	if len(files) == 0 {
@@ -24,7 +24,7 @@ func TestParse(t *testing.T) {
 		t.Run(filename, func(t *testing.T) {
 			sourceBytes, err := os.ReadFile(filename)
 			if err != nil {
-				t.Fatalf("Failed to read file %s: %v", filename, err)
+				t.Fatalf("Failed to read file %s : %v", filename, err)
 			}
 
 			src := string(sourceBytes)
@@ -35,7 +35,7 @@ func TestParse(t *testing.T) {
 			// Parse tokens to AST
 			defer func() {
 				if r := recover(); r != nil {
-					t.Fatalf("Parsing failed for %s: %v", filename, r)
+					t.Fatalf("Parsing failed for %s : %v", filename, r)
 				}
 			}()
 

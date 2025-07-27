@@ -1,4 +1,4 @@
-func main(argc: i32, argv: utf8[][]): void {
+func main(argc: i32, argv: string[]): void {
     let x: i32 = 5;
     let y: i3s = 3;
     if (x < y - 2 * 2) {

@@ -2,8 +2,8 @@ package typechecker
 
 import (
 	"fmt"
-	"jru-test/ast"
-	"jru-test/lexer"
+	"github.com/ruistola/compiler-proto/ast"
+	"github.com/ruistola/compiler-proto/lexer"
 	"slices"
 )
 

@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/ruistola/compiler-proto/lexer"
+	"github.com/ruistola/compiler-proto/parser"
+	"github.com/ruistola/compiler-proto/typechecker"
 	"github.com/yassinebenaid/godump"
-	"jru-test/lexer"
-	"jru-test/parser"
-	"jru-test/typechecker"
 	"os"
 	"time"
 )

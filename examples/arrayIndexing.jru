@@ -1,8 +1,8 @@
 func main(): void {
     let x: i32 = 0;
     let arr: i32[];
-    push(arr, 69);
-    push(arr, 420);
+    arr.push(69);
+    arr.push(420);
     print(arr[x * 2 + 1]);
 }
 

@@ -1,4 +1,4 @@
-module jru-test
+module github.com/ruistola/compiler-proto
 
 go 1.23.3
 
